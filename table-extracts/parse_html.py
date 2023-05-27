@@ -16,23 +16,25 @@ def fetch_data(url):
         print(e, "while fetching", url)
 
 
-def get_tables(link):
-    print("Results for " + link)
+def extract_html_tables(link):
+    print("\nResults for " + link)
     html = fetch_data(link)
     soup = BeautifulSoup(html, "html.parser")
     tables = soup.findAll("table")
     return tables    
 
 
-def get_table_data(table):
+def extract_table_data(table):
     headers = [th.get_text() for th in table.find("tr").find_all("td")]
     print(headers)
-    datasets = []   
     for row in table.find_all("tr")[1:]:
         dataset = [td.get_text() for td in row.find_all("td")]
         print(dataset)
 
-for link in links:
-    tables = get_tables(link)
-    for table in tables:
-        get_table_data(table)
+def extract_tables():
+    for link in links:
+        tables = extract_html_tables(link)
+        for table in tables:
+            extract_table_data(table)
+
+extract_tables()
