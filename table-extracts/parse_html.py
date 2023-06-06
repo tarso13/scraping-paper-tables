@@ -1,27 +1,12 @@
 import urllib.request
 from bs4 import BeautifulSoup
-
-# Links to extract data from (temporary solution)
-urls = [
-    "https://iopscience.iop.org/article/10.1086/313034/fulltext/35878.text.html",
-    "https://www.aanda.org/articles/aa/full_html/2018/08/aa32766-18/aa32766-18.html"
-]
-
-# Open url provided and return fetched data (html file)
-def fetch_data(url):
-    try:
-        f = urllib.request.urlopen(url)
-        html = f.read()
-        f.close()
-        return html
-    except urllib.request.HTTPError as e:
-        print(e, "while fetching", url)
+import os 
 
 # Extract all tables from url provided in html form
-def extract_html_tables(url):
-    print("\nResults for " + url)
-    html = fetch_data(url)
-    soup = BeautifulSoup(html, "html.parser")
+def extract_html_tables(html):
+    print("\nResults for " + html)
+    html_content =  open(html,'r', encoding='UTF8').read()
+    soup = BeautifulSoup(html_content, "html.parser")
     tables = soup.findAll("table")
     return tables    
 
@@ -35,11 +20,12 @@ def extract_table_data(table):
         dataset = [td.get_text() for td in row.find_all("td")]
         print(dataset)
 
-# Extract all table data found in given html links and print them
-def extract_tables():
-    for url in urls:
-        tables = extract_html_tables(url)
+# Extract all table data found in html files in given directory and print them
+def extract_tables(directory_name):
+    html_files = os.listdir(directory_name)
+    for html in html_files:
+        tables = extract_html_tables(directory_name + "/" + html)
         for table in tables:
             extract_table_data(table)
 
-extract_tables()
+extract_tables("html_papers_astrophysics")
