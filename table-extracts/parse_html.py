@@ -21,7 +21,7 @@ def extract_html_tables(html):
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 def extract_table_data(table, header_type):
-    headers = list(th.get_text() for th in table.find("tr").find_all("th"))
+    headers = list(th.get_text() for th in table.find("tr").find_all(header_type))
     print(headers)
     for row in table.find_all("tr")[1:]:
         dataset = list(td.get_text() for td in row.find_all("td"))

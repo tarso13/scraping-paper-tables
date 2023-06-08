@@ -32,7 +32,7 @@ def fetch_title(url):
 # Set up title for saved html 
 # Ignore spaces and invalid characters
 def setup_title(title):
-    title_no_spaces_list = list(map(str.strip, title.split(' ')))
+    title_no_spaces_list = title.replace(" ", "_")
     title_no_spaces = ''
     for word in title_no_spaces_list:
         if(invalid_characters_as_words.__contains__(word) == False):
