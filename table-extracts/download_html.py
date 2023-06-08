@@ -8,7 +8,7 @@ invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!', '`', '*', "'",
 # Links to extract data from (temporary solution)
 urls = [
     "https://iopscience.iop.org/article/10.1086/313034/fulltext/35878.text.html",
-    "https://www.aanda.org/articles/aa/full_html/2018/08/aa32766-18/aa32766-18.html",
+    "https://www.aanda.org/articles/aa/full_html/2018/08/aa32766-18/aa32766-18.html"
 ]
 
 # Create a directory with the name given (if it does not exist)

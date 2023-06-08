@@ -25,9 +25,11 @@ def extract_table_data(table):
     headers = list(th.get_text() for th in table.find("tr").find_all("th"))
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
+    if 'Issue' in headers[0]: # exclude summary table with info about the paper
+        return
     print(headers)
     for row in table.find_all("tr")[1:]:
-        dataset = list(td.get_text().replace(u'\xa0', u' ') for td in row.find_all("td"))
+        dataset = list(td.get_text().replace(u'\xa0', u' ') for td in row.find_all("td"))      
         print(dataset)
 
 
@@ -37,7 +39,10 @@ def extract_table_data(table):
 def extract_tables(directory_name):
     html_files = os.listdir(directory_name)
     for html in html_files:
+        if html in files_extracted:
+            continue
         tables = extract_html_tables(directory_name + "/" + html)
+        files_extracted.append(html)
         for table in tables:
             extra_link = table.find("a")
             if extra_link and (".html" in extra_link["href"]):
@@ -78,15 +83,15 @@ def extract_extra_tables_from_html_files(directory_name):
 
         domain_found = str(domain(html_content))
         soup = BeautifulSoup(html_content, "html.parser").findAll(
-            lambda t: t.name == "a" and t.text.startswith("Table")
+            lambda t: t.name == 'a' and t.text.startswith('Table')
         )
         counter = 0
         hrefs_found = []
         for a in soup:
             html_file = ".html" in a["href"]
-            non_contents_html_file = "contents" not in a["href"]
+            non_contents_html_file = "contents" not in a["href"] # exclude contents table in paper 
             if html_file and non_contents_html_file:
-                if hrefs_found.__contains__(a["href"]) == True:
+                if a["href"] in hrefs_found:
                     continue
                 hrefs_found.append(a["href"])
                 counter += 1
@@ -95,11 +100,11 @@ def extract_extra_tables_from_html_files(directory_name):
                     domain_found + a["href"],
                     directory_name,
                     title,
-                    "_T" + str(counter),
+                    "_T" + str(counter)
                 )
-                extract_tables(directory_name)
-                links_to_extract.remove(html)
-
+        links_to_extract.remove(html)
+    extract_tables(directory_name)
+                
 
 extract_tables("html_papers_astrophysics")
 extract_extra_tables_from_html_files("html_papers_astrophysics")
