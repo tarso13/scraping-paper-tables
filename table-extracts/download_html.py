@@ -43,11 +43,20 @@ def setup_title(title):
 # Download url provided and save it locally (html file)
 # The directory to save the file is provided
 # The name of the file is the new title generated from the title provided
-def download_html_locally(url, directory_name, title):
+def download_html_locally(url, directory_name, title, table):
     try:
         create_directory(directory_name)
+        downloaded_files = os.listdir(directory_name)
         new_title = setup_title(title)
-        urllib.request.urlretrieve(url, directory_name + "/" + new_title + ".html")
+        local_file = ''
+        if table == None:
+            local_file = new_title + ".html"
+        else:
+            local_file = new_title + table + ".html"
+        if downloaded_files.__contains__(local_file):
+            return
+        urllib.request.urlretrieve(url, directory_name + "/" + local_file)
+        return directory_name + "/" + new_title + ".html"
     except urllib.request.HTTPError as e:
         print(e, " while retrieving ", url)
 
@@ -55,6 +64,6 @@ def download_html_locally(url, directory_name, title):
 # Download html files from urls and save them locally
 def download_all_html_files():
     for url in urls:
-        download_html_locally(url, "html_papers_astrophysics", title=fetch_title(url))
+        download_html_locally(url, "html_papers_astrophysics", fetch_title(url), None)
 
 download_all_html_files()
