@@ -3,7 +3,7 @@ import urllib.request
 import os
 
 # List of invalid words which may be encountered in paper title 
-invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!', '`', '&', '*', "'", '|', '{', '?', '=', '}','/',':', '"', '\\','@']
+invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!', '`', '*', "'", '|', '{', '?', '=', '}','/',':', '"', '\\','@']
 
 # Links to extract data from (temporary solution)
 urls = [
@@ -35,7 +35,7 @@ def setup_title(title):
     title_no_spaces_list = title.replace(" ", "_")
     title_no_spaces = ''
     for word in title_no_spaces_list:
-        if(invalid_characters_as_words.__contains__(word) == False):
+        if word not in invalid_characters_as_words:
             title_no_spaces += word
     return title_no_spaces
     
@@ -53,7 +53,7 @@ def download_html_locally(url, directory_name, title, table):
             local_file = new_title + ".html"
         else:
             local_file = new_title + table + ".html"
-        if downloaded_files.__contains__(local_file):
+        if local_file in downloaded_files:
             return
         urllib.request.urlretrieve(url, directory_name + "/" + local_file)
         return directory_name + "/" + new_title + ".html"
