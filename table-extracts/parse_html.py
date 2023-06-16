@@ -1,18 +1,20 @@
 from bs4 import BeautifulSoup
 from download_html import download_html_locally
-from download_html import fetch_title
+from download_html import fetch_title, setup_title
 import os
 
-# List containing the html files containing tables that have been extracted 
+# List containing the html files with tables that have been extracted 
 files_extracted = []
 
-# List containing the (extra) html files containing tables to be extracted 
-links_to_extract = []
+# List containing the (extra) html files with tables to be extracted 
+files_to_extract = []
 
 # Extract all tables from html file provided in html form
 def extract_html_tables(html):
     print("\nResults for " + html)
-    html_content = open(html, "r", encoding="UTF8").read()
+    html_file = open(html, "r", encoding="UTF8")
+    html_content = html_file.read()
+    html_file.close()
     soup = BeautifulSoup(html_content, "html.parser")
     tables = soup.findAll("table")
     return tables
@@ -25,8 +27,7 @@ def extract_table_data(table):
     headers = list(th.get_text() for th in table.find("tr").find_all("th"))
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
-    if 'Issue' in headers[0]: # exclude summary table with info about the paper
-        return
+
     print(headers)
     for row in table.find_all("tr")[1:]:
         dataset = list(td.get_text().replace(u'\xa0', u' ') for td in row.find_all("td"))      
@@ -35,21 +36,26 @@ def extract_table_data(table):
 
 # Extract all table data found in html files in given directory and print them
 # If extra links for tables are included, these links are appended in links_to_extract
-# and are handled after the simple ones
-def extract_tables(directory_name):
+# and are handled after the simple ones 
+# extra_aanda_table is a flag used to identify the extra links case where the tables should be 
+# extracted
+def extract_tables(directory_name, extra_aanda_table):
     html_files = os.listdir(directory_name)
+    
     for html in html_files:
         if html in files_extracted:
             continue
-        tables = extract_html_tables(directory_name + "/" + html)
+
         files_extracted.append(html)
+        
+        if 'A&A' in html and not extra_aanda_table: # first aanda case containing the links
+            aanda_parser(directory_name, html)
+            return
+            
+        tables = extract_html_tables(directory_name + "/" + html)
+
         for table in tables:
-            extra_link = table.find("a")
-            if extra_link and (".html" in extra_link["href"]):
-                if html not in links_to_extract:
-                    links_to_extract.append(html)
-            else:
-                extract_table_data(table)
+            extract_table_data(table)
 
 
 # Find the n-th occurence of a substring in a string
@@ -72,39 +78,50 @@ def domain(html_content):
     domain = base_href[0:position_of_slash]
     return domain
 
-# Extract all table data found in html files with references to other htmls containing the actual tables
+# Extract all table data found in html files with references to other htmls (aanda case) containing the actual tables
 # When extra links are identified, then the tables are extracted using extract_tables
 # The name of the extra files is the same as the initial html files concatenated with '_T#', where # is the number of the extra link
 def extract_extra_tables_from_html_files(directory_name):
-    if len(links_to_extract) == 0:
-        return
-    for html in links_to_extract:
+    for html in files_to_extract:
         html_content = open(directory_name + "/" + html, "r", encoding="UTF8").read()
-
         domain_found = str(domain(html_content))
-        soup = BeautifulSoup(html_content, "html.parser").findAll(
-            lambda t: t.name == 'a' and t.text.startswith('Table')
-        )
-        counter = 0
-        hrefs_found = []
-        for a in soup:
-            html_file = ".html" in a["href"]
-            non_contents_html_file = "contents" not in a["href"] # exclude contents table in paper 
-            if html_file and non_contents_html_file:
-                if a["href"] in hrefs_found:
-                    continue
-                hrefs_found.append(a["href"])
-                counter += 1
-                title = fetch_title(domain_found + a["href"])
-                download_html_locally(
-                    domain_found + a["href"],
-                    directory_name,
-                    title,
-                    "_T" + str(counter)
-                )
-        links_to_extract.remove(html)
-    extract_tables(directory_name)
-                
+        if 'aanda' in domain_found:
+            extract_tables(directory_name, True)
+        else:
+            extract_tables(directory_name, False)
+        files_to_extract.remove(html)
 
-extract_tables("html_papers_astrophysics")
-extract_extra_tables_from_html_files("html_papers_astrophysics")
+# Parser specifically for html papers of aanda.org
+# The format of papers in this domain includes tables in extra links
+def aanda_parser(directory_name, html):
+    html_file = open(directory_name + '/' + html, "r", encoding="UTF8")
+    html_content = html_file.read()
+    html_file.close()
+    
+    soup = BeautifulSoup(html_content, 'html.parser')
+    domain_found = str(domain(html_content))
+    
+    table_classes = soup.findAll('div', {'class' : 'ligne'})
+    
+    for table_class in table_classes:
+        path_to_table = table_class.find('a')['href']
+        
+        if path_to_table == None: # normal case (we are in the extra tables)
+            extract_tables(directory_name, True)
+            
+        full_path = domain_found + path_to_table
+        position_of_slash = find_nth_occurence(path_to_table, '/', 6)
+        title = setup_title(fetch_title(full_path))
+        suffix  = '_' + path_to_table[position_of_slash+1 : len(path_to_table)]
+        suffix = suffix.replace('.html', '')
+        
+        download_html_locally(
+            full_path,
+            directory_name,
+            title, 
+            suffix
+        )
+        files_to_extract.append(title + suffix + '.html')
+
+extract_tables('html_papers_astrophysics', False)
+extract_extra_tables_from_html_files('html_papers_astrophysics')
