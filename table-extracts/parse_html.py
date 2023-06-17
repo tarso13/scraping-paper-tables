@@ -81,12 +81,7 @@ def domain(html_content):
 # The name of the extra files is the same as the initial html files concatenated with '_T#', where # is the number of the extra link
 def extract_extra_tables_from_html_files(directory_name):
     for html in files_to_extract:
-        html_content = open(directory_name + "/" + html, "r", encoding="UTF8").read()
-        domain_found = str(domain(html_content))
-        if 'aanda' in domain_found:
-            extract_tables(directory_name)
-        else:
-            extract_tables(directory_name)
+        extract_tables(directory_name)
         files_to_extract.remove(html)
 
 # Parser specifically for html papers of aanda.org
