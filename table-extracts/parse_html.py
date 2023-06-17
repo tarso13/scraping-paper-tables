@@ -46,16 +46,26 @@ def extract_tables(directory_name):
 
         files_extracted.append(html)
         
+        if html in files_to_extract:
+            files_to_extract.remove(html)
+            
         if 'A&A' in html and 'A&A)_T' not in html: # first aanda case containing the links
             aanda_parser(directory_name, html)
-            return
+            continue
             
         tables = extract_html_tables(directory_name + "/" + html)
 
         for table in tables:
             extract_table_data(table)
 
-
+# Extract all table data found in html files with references to other htmls (aanda case) containing the actual tables
+# When extra links are identified, then the tables are extracted using extract_tables
+# The name of the extra files is the same as the initial html files concatenated with '_T#', where # is the number of the extra link
+def extract_extra_tables_from_html_files(directory_name):
+    if len(files_to_extract) != 0:
+        extract_tables(directory_name)
+ 
+        
 # Find the n-th occurence of a substring in a string
 def find_nth_occurence(string, substring, n):
     parts = string.split(substring, n + 1)
@@ -76,14 +86,6 @@ def domain(html_content):
     domain = base_href[0:position_of_slash]
     return domain
 
-# Extract all table data found in html files with references to other htmls (aanda case) containing the actual tables
-# When extra links are identified, then the tables are extracted using extract_tables
-# The name of the extra files is the same as the initial html files concatenated with '_T#', where # is the number of the extra link
-def extract_extra_tables_from_html_files(directory_name):
-    for html in files_to_extract:
-        extract_tables(directory_name)
-        files_to_extract.remove(html)
-
 # Parser specifically for html papers of aanda.org
 # The format of papers in this domain includes tables in extra links
 def aanda_parser(directory_name, html):
@@ -98,15 +100,12 @@ def aanda_parser(directory_name, html):
     
     for table_class in table_classes:
         path_to_table = table_class.find('a')['href']
-        
-        if path_to_table == None: # normal case (we are in the extra tables)
-            extract_tables(directory_name)
             
         full_path = domain_found + path_to_table
         position_of_slash = find_nth_occurence(path_to_table, '/', 6)
         title = setup_title(fetch_title(full_path))
         suffix  = '_' + path_to_table[position_of_slash+1 : len(path_to_table)]
-        suffix = suffix.replace('.html', '')
+        suffix = suffix.replace('.html', '') # .html extension will be added in download_html_locally
         
         download_html_locally(
             full_path,
@@ -114,7 +113,10 @@ def aanda_parser(directory_name, html):
             title, 
             suffix
         )
-        files_to_extract.append(title + suffix + '.html')
+        
+        html_local_path = title + suffix + '.html'
+        if html_local_path not in files_to_extract:
+            files_to_extract.append(title + suffix + '.html')
 
 extract_tables('html_papers_astrophysics')
 extract_extra_tables_from_html_files('html_papers_astrophysics')
