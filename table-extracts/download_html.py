@@ -5,14 +5,14 @@ import os
 # List of invalid words which may be encountered in paper title 
 invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!', '`', '*', "'", '|', '{', '?', '=', '}','/',':', '"', '\\','@']
 
-# Links to extract data from (temporary solution)
+# Links to extract data from 
 urls = [
-    # 'https://iopscience.iop.org/article/10.1086/313034/fulltext/35878.text.html',
+    'https://iopscience.iop.org/article/10.1086/313034/fulltext/35878.text.html',
     'https://www.aanda.org/articles/aa/full_html/2018/08/aa32766-18/aa32766-18.html',
-    # 'https://www.aanda.org/articles/aa/full_html/2023/06/aa44220-22/aa44220-22.html', 
-    # 'https://www.aanda.org/articles/aa/full_html/2023/06/aa44161-22/aa44161-22.html',
-    # 'https://www.aanda.org/articles/aa/full_html/2016/02/aa27620-15/aa27620-15.html',
-    # 'https://www.aanda.org/articles/aa/full_html/2016/01/aa26356-15/aa26356-15.html'
+    'https://www.aanda.org/articles/aa/full_html/2023/06/aa44220-22/aa44220-22.html', 
+    'https://www.aanda.org/articles/aa/full_html/2023/06/aa44161-22/aa44161-22.html',
+    'https://www.aanda.org/articles/aa/full_html/2016/02/aa27620-15/aa27620-15.html',
+    'https://www.aanda.org/articles/aa/full_html/2016/01/aa26356-15/aa26356-15.html'
 ]
 
 # Create a directory with the name given (if it does not exist)
@@ -68,6 +68,6 @@ def download_html_locally(url, directory_name, title, suffix):
 # Download html files from urls and save them locally
 def download_all_html_files():
     for url in urls:
-        download_html_locally(url, "html_papers_astrophysics", fetch_title(url), '')
+        download_html_locally(url, 'html_papers_astrophysics', fetch_title(url), '')
 
 download_all_html_files()
