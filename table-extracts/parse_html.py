@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
-from download_html import download_html_locally
-from download_html import fetch_title, setup_title
+from download_html import *
+from urllib.parse import urlparse
 import os
 
 # List containing the html files with tables that have been extracted 
@@ -8,6 +8,20 @@ files_extracted = []
 
 # List containing the (extra) html files with tables to be extracted 
 files_to_extract = []
+
+# Value used to replace undesired word occurences in datasets
+EMPTY = ''
+
+# Identify the domain name given an html content using the base href tag
+# and the occurences of '/'
+# Example: https://site.org/path_to_html.html
+# Note: // is counted as 1
+def domain(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+    base = soup.find('base')
+    base_href = base['href']
+    domain = urlparse(base_href).netloc
+    return domain
 
 # Extract all tables from html file provided in html form
 def extract_html_tables(html):
@@ -30,7 +44,7 @@ def extract_table_data(table):
 
     print(headers)
     for row in table.find_all("tr")[1:]:
-        dataset = list(td.get_text().replace(u'\xa0', u' ').replace('\n',' ') for td in row.find_all("td"))      
+        dataset = list(td.get_text().replace('\xa0', EMPTY).replace('\n', EMPTY) for td in row.find_all("td"))      
         print(dataset)
 
 
@@ -52,7 +66,7 @@ def extract_tables(directory_name):
         if 'A&A' in html and 'A&A)_T' not in html: # first aanda case containing the links
             aanda_parser(directory_name, html)
             continue
-            
+       
         tables = extract_html_tables(directory_name + "/" + html)
 
         for table in tables:
@@ -64,48 +78,30 @@ def extract_tables(directory_name):
 def extract_extra_tables_from_html_files(directory_name):
     if len(files_to_extract) != 0:
         extract_tables(directory_name)
- 
-        
-# Find the n-th occurence of a substring in a string
-def find_nth_occurence(string, substring, n):
-    parts = string.split(substring, n + 1)
-    if len(parts) <= n + 1:
-        return -1
-    return len(string) - len(parts[-1]) - len(substring)
 
-
-# Identify the domain name given an html content using the base href tag
-# and the occurences of '/'
-# Example: https://site.org/path_to_html.html
-# Note: // is counted as 1
-def domain(html_content):
-    soup = BeautifulSoup(html_content, "html.parser")
-    base = soup.find('base')
-    base_href = base['href']
-    position_of_slash = find_nth_occurence(base_href, "/", 2)
-    domain = base_href[0:position_of_slash]
-    return domain
+# Build table suffix for local html file that contains extra table found in original html
+def table_suffix(path_to_table):
+    suffix_index  = path_to_table.find('/T')
+    html_index  = path_to_table.find('.html')
+    suffix = path_to_table[suffix_index:html_index]
+    suffix = suffix.replace('/', '_')
+    return suffix
 
 # Parser specifically for html papers of aanda.org
 # The format of papers in this domain includes tables in extra links
 def aanda_parser(directory_name, html):
-    html_file = open(directory_name + '/' + html, "r", encoding="UTF8")
+    html_file = open(directory_name + '/' + html, 'r', encoding='UTF8')
     html_content = html_file.read()
-    html_file.close()
     
     soup = BeautifulSoup(html_content, 'html.parser')
-    domain_found = str(domain(html_content))
-    
+    domain_found = domain(html_content)
     table_classes = soup.findAll('div', {'class' : 'ligne'})
     
     for table_class in table_classes:
         path_to_table = table_class.find('a')['href']
-            
-        full_path = domain_found + path_to_table
-        position_of_slash = find_nth_occurence(path_to_table, '/', 6)
+        full_path = 'https://' + domain_found + path_to_table
         title = setup_title(fetch_title(full_path))
-        suffix  = '_' + path_to_table[position_of_slash+1 : len(path_to_table)]
-        suffix = suffix.replace('.html', '') # .html extension will be added in download_html_locally
+        suffix = table_suffix(path_to_table)
         
         download_html_locally(
             full_path,
@@ -117,6 +113,11 @@ def aanda_parser(directory_name, html):
         html_local_path = title + suffix + '.html'
         if html_local_path not in files_to_extract:
             files_to_extract.append(title + suffix + '.html')
+    return
 
+print('Start downloading process...')
+download_all_html_files()
+print('Start extracting process...')
 extract_tables('html_papers_astrophysics')
-extract_extra_tables_from_html_files('html_papers_astrophysics')
+extract_tables('html_papers_astrophysics_aanda')
+extract_extra_tables_from_html_files('html_papers_astrophysics_aanda')

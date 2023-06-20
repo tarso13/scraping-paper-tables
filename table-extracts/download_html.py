@@ -1,8 +1,9 @@
 from bs4 import BeautifulSoup
 import urllib.request
+from tldextract import extract
 import os
 
-# List of invalid words which may be encountered in paper title 
+# List of invalid words which may be encountered in paper titles 
 invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!', '`', '*', "'", '|', '{', '?', '=', '}','/',':', '"', '\\','@']
 
 # Links to extract data from 
@@ -21,6 +22,13 @@ def create_directory(directory_name):
         return
     else:
         os.mkdir(directory_name)
+        
+# Identify the domain name and replace dots with underscores to save file locally
+# Example: "http://abc.hostname.com/somethings/anything/"
+def domain_from_url(url):
+    tsd, td, tsu = extract(url) # abc, hostname, com
+    url_domain = tsd + '_' + td + '_' + tsu  
+    return url_domain
 
 # Open url provided and return fetched data (html file)
 def fetch_title(url):
@@ -29,7 +37,7 @@ def fetch_title(url):
         html = f.read()
         f.close()
         soup = BeautifulSoup(html, "html.parser")
-        return soup.find('title').get_text()
+        return soup.title.string
     except urllib.request.HTTPError as e:
         print(e, " while fetching ", url)
 
@@ -59,6 +67,7 @@ def download_html_locally(url, directory_name, title, suffix):
             local_file = new_title + suffix + ".html"
         if local_file in downloaded_files:
             return
+        print('Downloading ' + url)
         urllib.request.urlretrieve(url, directory_name + "/" + local_file)
         return directory_name + "/" + new_title + ".html"
     except urllib.request.HTTPError as e:
@@ -66,8 +75,11 @@ def download_html_locally(url, directory_name, title, suffix):
 
 
 # Download html files from urls and save them locally
+# Specify aanda case and save those files in different directory
 def download_all_html_files():
     for url in urls:
+        if 'aanda' in url:
+            download_html_locally(url, 'html_papers_astrophysics_aanda', fetch_title(url), '')
+            continue
         download_html_locally(url, 'html_papers_astrophysics', fetch_title(url), '')
-
-download_all_html_files()
+        
