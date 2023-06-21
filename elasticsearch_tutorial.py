@@ -1,12 +1,12 @@
 from elasticsearch import Elasticsearch
-from elastic_password import get_elastic_password
+from password import get_password
 
 # Read elastic password from file so as to keep it private  
-elastic_password = get_elastic_password('elastic_password.txt')
+elastic_password = get_password('elastic_password.txt')
 
 # Create a connection to Elasticsearch
 es = Elasticsearch(
-    [{"host": "localhost", "port": 9200, "scheme": "http"}],
+    [{"host": "127.0.0.1", "port": 9200, "scheme": "http"}],
     basic_auth=["elastic", elastic_password],
 )
 
