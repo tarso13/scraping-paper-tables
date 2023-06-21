@@ -2,32 +2,23 @@ from bs4 import BeautifulSoup
 import urllib.request
 from tldextract import extract
 import os
+from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
 
 # List of invalid words which may be encountered in paper titles 
 invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!', '`', '*', "'", '|', '{', '?', '=', '}','/',':', '"', '\\','@']
-
-# Links to extract data from 
-urls = [
-    'https://iopscience.iop.org/article/10.1086/313034/fulltext/35878.text.html',
-    'https://www.aanda.org/articles/aa/full_html/2018/08/aa32766-18/aa32766-18.html',
-    'https://www.aanda.org/articles/aa/full_html/2023/06/aa44220-22/aa44220-22.html', 
-    'https://www.aanda.org/articles/aa/full_html/2023/06/aa44161-22/aa44161-22.html',
-    'https://www.aanda.org/articles/aa/full_html/2016/02/aa27620-15/aa27620-15.html',
-    'https://www.aanda.org/articles/aa/full_html/2016/01/aa26356-15/aa26356-15.html'
-]
 
 # Create a directory with the name given (if it does not exist)
 def create_directory(directory_name):
     if os.path.isdir(directory_name):
         return
-    else:
-        os.mkdir(directory_name)
+    os.mkdir(directory_name)
         
 # Identify the domain name and replace dots with underscores to save file locally
 # Example: "http://abc.hostname.com/somethings/anything/"
 def domain_from_url(url):
     tsd, td, tsu = extract(url) # abc, hostname, com
-    url_domain = tsd + '_' + td + '_' + tsu  
+    url_domain = f'{tsd}.{td}.{tsu}'  
     return url_domain
 
 # Open url provided and return fetched data (html file)
@@ -62,24 +53,45 @@ def download_html_locally(url, directory_name, title, suffix):
         new_title = setup_title(title)
         local_file = ''
         if suffix == '':
-            local_file = new_title + ".html"
+            local_file = f'{new_title}.html'
         else:
-            local_file = new_title + suffix + ".html"
+            local_file = f'{new_title}{suffix}.html'
         if local_file in downloaded_files:
             return
         print('Downloading ' + url)
-        urllib.request.urlretrieve(url, directory_name + "/" + local_file)
-        return directory_name + "/" + new_title + ".html"
+        urllib.request.urlretrieve(url, f'{directory_name}/{local_file}')
+        return f'{directory_name}/{new_title}.html'
     except urllib.request.HTTPError as e:
         print(e, " while retrieving ", url)
 
 
-# Download html files from urls and save them locally
+# Download html files from urls and save them locally concurrently
 # Specify aanda case and save those files in different directory
-def download_all_html_files():
+def download_all_html_files(directory_name, urls):
+    executor = ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())
+    results = []
     for url in urls:
-        if 'aanda' in url:
-            download_html_locally(url, 'html_papers_astrophysics_aanda', fetch_title(url), '')
-            continue
-        download_html_locally(url, 'html_papers_astrophysics', fetch_title(url), '')
-        
+        try:
+            new_directory_name = directory_name
+            if 'aanda' in domain_from_url(url):
+                new_directory_name = f'{directory_name}_aanda'
+            results.append(executor.submit(download_html_locally, url, new_directory_name, fetch_title(url), ''))
+        except Exception as e:
+            print(e)
+    # wait for all downloads to complete 
+    for result in results:
+        result.result()
+
+# Download extra html files from urls and save them locally concurrently
+# Specify aanda case and save those files in different directory
+def download_extra_html_files(directory_name, urls_suffixes):
+    executor = ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())
+    results = []
+    for url in urls_suffixes:
+        try:
+            results.append(executor.submit(download_html_locally, url, directory_name, fetch_title(url), str(urls_suffixes[url])))
+        except Exception as e:
+            print(e)
+    # wait for all downloads to complete        
+    for result in results:
+        result.result()

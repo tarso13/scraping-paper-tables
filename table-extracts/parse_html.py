@@ -1,7 +1,5 @@
-from bs4 import BeautifulSoup
 from download_html import *
 from urllib.parse import urlparse
-import os
 
 # List containing the html files with tables that have been extracted 
 files_extracted = []
@@ -11,6 +9,9 @@ files_to_extract = []
 
 # Value used to replace undesired word occurences in datasets
 EMPTY = ''
+
+# Map containing the (extra) url as key and the table suffix as value
+url_suffixes = {}
 
 # Identify the domain name given an html content using the base href tag
 # and the occurences of '/'
@@ -67,7 +68,7 @@ def extract_tables(directory_name):
             aanda_parser(directory_name, html)
             continue
        
-        tables = extract_html_tables(directory_name + "/" + html)
+        tables = extract_html_tables(f'{directory_name}/{html}')
 
         for table in tables:
             extract_table_data(table)
@@ -75,7 +76,9 @@ def extract_tables(directory_name):
 # Extract all table data found in html files with references to other htmls (aanda case) containing the actual tables
 # When extra links are identified, then the tables are extracted using extract_tables
 # The name of the extra files is the same as the initial html files concatenated with '_T#', where # is the number of the extra link
-def extract_extra_tables_from_html_files(directory_name):
+def extract_aanda_tables_from_html_files(directory_name):
+    extract_tables(directory_name)
+    download_extra_html_files(directory_name, url_suffixes)
     if len(files_to_extract) != 0:
         extract_tables(directory_name)
 
@@ -90,34 +93,21 @@ def table_suffix(path_to_table):
 # Parser specifically for html papers of aanda.org
 # The format of papers in this domain includes tables in extra links
 def aanda_parser(directory_name, html):
-    html_file = open(directory_name + '/' + html, 'r', encoding='UTF8')
+    html_file = open(f'{directory_name}/{html}', 'r', encoding='UTF8')
     html_content = html_file.read()
-    
     soup = BeautifulSoup(html_content, 'html.parser')
+    
     domain_found = domain(html_content)
     table_classes = soup.findAll('div', {'class' : 'ligne'})
     
-    for table_class in table_classes:
+    for table_class in table_classes:   
         path_to_table = table_class.find('a')['href']
-        full_path = 'https://' + domain_found + path_to_table
+        full_path = f'https://{domain_found}{path_to_table}'
         title = setup_title(fetch_title(full_path))
         suffix = table_suffix(path_to_table)
+        html_local_path = f'{title}{suffix}.html'
+        url_suffixes[full_path] = suffix
         
-        download_html_locally(
-            full_path,
-            directory_name,
-            title, 
-            suffix
-        )
-        
-        html_local_path = title + suffix + '.html'
         if html_local_path not in files_to_extract:
-            files_to_extract.append(title + suffix + '.html')
-    return
-
-print('Start downloading process...')
-download_all_html_files()
-print('Start extracting process...')
-extract_tables('html_papers_astrophysics')
-extract_tables('html_papers_astrophysics_aanda')
-extract_extra_tables_from_html_files('html_papers_astrophysics_aanda')
+            print(f'Need to download {full_path}')
+            files_to_extract.append(html_local_path)
