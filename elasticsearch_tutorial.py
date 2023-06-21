@@ -6,7 +6,7 @@ elastic_password = get_elastic_password('elastic_password.txt')
 
 # Create a connection to Elasticsearch
 es = Elasticsearch(
-    [{"host": "127.0.0.1", "port": 9200, "scheme": "http"}],
+    [{"host": "localhost", "port": 9200, "scheme": "http"}],
     basic_auth=["elastic", elastic_password],
 )
 
