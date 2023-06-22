@@ -1,5 +1,4 @@
 from parse_html import * 
-import time
 
 # Links to extract data from 
 urls = [
@@ -11,6 +10,7 @@ urls = [
     'https://www.aanda.org/articles/aa/full_html/2016/01/aa26356-15/aa26356-15.html'
 ]
 
+# Main function to download initial urls and extract data
 def main():
     print('Start downloading process...')
     download_all_html_files('html_papers_astrophysics', urls)
