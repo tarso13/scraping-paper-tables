@@ -1,5 +1,6 @@
 from download_html import *
 from urllib.parse import urlparse
+import json 
 
 # List containing the html files with tables that have been extracted 
 files_extracted = []
@@ -14,9 +15,6 @@ EMPTY = ''
 url_suffixes = {}
 
 # Identify the domain name given an html content using the base href tag
-# and the occurences of '/'
-# Example: https://site.org/path_to_html.html
-# Note: // is counted as 1
 def domain(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
     base = soup.find('base')
@@ -24,35 +22,73 @@ def domain(html_content):
     domain = urlparse(base_href).netloc
     return domain
 
-# Extract all tables from html file provided in html form
+# Extract all tables from html file provided in html form an extra footnotes for aanda journals
 def extract_html_tables(html):
     print("\nResults for " + html)
+    
     html_file = open(html, "r", encoding="UTF8")
     html_content = html_file.read()
     html_file.close()
     soup = BeautifulSoup(html_content, "html.parser")
+    
     tables = soup.findAll("table")
+    
+    # check for footnotes (aanda case)
+    if 'A&A)_T' in html:
+        search_aanda_footnotes(html_content)
+    
     return tables
 
-
+# Search for footnotes in aanda articles 
+def search_aanda_footnotes(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    history_div = soup.find('div', class_='history')
+    
+    if history_div == None:
+        return
+    
+    labels = history_div.find_all('sup')
+    # Extract the (a), (b), (c) labels and their text
+    for label in labels:
+        label_name = label.get_text(strip=True)
+        label_text = label.find_next('p').get_text(strip=True)
+        print(f'Found footnote with name {label_name} and text {label_text}\n')
+        
+        
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
-def extract_table_data(table):
+# and then converted into json files
+def extract_table_data(table, title, directory_name):
+    json_data = {}
+    key_prefix = f'headers'
+    
     headers = list(th.get_text() for th in table.find("tr").find_all("th"))
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
-
+    json_data[key_prefix] = str(headers).replace('[', EMPTY).replace(']',EMPTY)
+    json_data[key_prefix] = json_data[key_prefix].replace(',', EMPTY)
+    
     print(headers)
+    
     for row in table.find_all("tr")[1:]:
+        key_prefix = f'dataset{str(table.find_all("tr").index(row))}'
         dataset = list(td.get_text().replace('\xa0', EMPTY).replace('\n', EMPTY) for td in row.find_all("td"))      
         print(dataset)
+        json_data[key_prefix] = str(dataset).replace('[', EMPTY).replace(']',EMPTY)
+        json_data[key_prefix] = json_data[key_prefix].replace(',', EMPTY)
+    
+    file = open(f'{directory_name}/{title}.json', 'w', encoding='UTF8')
+    file.write(json.dumps(json_data, indent=4))
 
 
 # Extract all table data found in html files in given directory and print them
 # If extra links for tables are included, these links are appended in links_to_extract
 # and are handled after the simple ones 
 def extract_tables(directory_name):
+    if os.path.exists(directory_name) == False:
+        return
+    
     html_files = os.listdir(directory_name)
     
     for html in html_files:
@@ -69,10 +105,10 @@ def extract_tables(directory_name):
             continue
        
         tables = extract_html_tables(f'{directory_name}/{html}')
-
+        create_directory('json_results')
         for table in tables:
-            extract_table_data(table)
-
+            extract_table_data(table, html.replace('.html',''), 'json_results')
+            
 # Extract all table data found in html files with references to other htmls (aanda case) containing the actual tables
 # When extra links are identified, then the tables are extracted using extract_tables
 # The name of the extra files is the same as the initial html files concatenated with '_T#', where # is the number of the extra link
