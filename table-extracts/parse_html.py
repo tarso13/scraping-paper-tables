@@ -139,7 +139,7 @@ def aanda_parser(directory_name, html):
     for table_class in table_classes:   
         path_to_table = table_class.find('a')['href']
         full_path = f'https://{domain_found}{path_to_table}'
-        title = setup_title(fetch_title(full_path))
+        title = setup_title(fetch_title(html_content))
         suffix = table_suffix(path_to_table)
         html_local_path = f'{title}{suffix}.html'
         url_suffixes[full_path] = suffix
