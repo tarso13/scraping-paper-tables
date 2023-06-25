@@ -8,6 +8,7 @@ token=get_password('nasa_ads_token.txt')
 # Build ads encoded query using the arguments provided
 # It is necessary that all of the arguments are provided and in a valid way
 # Start and end year are optional, constraint specifies the search query
+# if constraint is a domain, provide more than the domain name, e.g something.org
 def build_ads_query(constraint, start_year, end_year, return_value, results):
     query = {}
     if start_year == None or end_year == None:
@@ -30,6 +31,8 @@ def extract_bibcode_from_results(query_results):
     json_response = json_results['response']
     json_docs = json_response['docs']
     bibcode_kv = str(json_docs[0])
+    # extract bibcode bibcode kv is inthe form:
+    # { "bibcode" : 'xxxxxxxxxx'}
     position = bibcode_kv.find(": '")
     final_bibcode = bibcode_kv[position + 3 : bibcode_kv.find("'}")]
     return final_bibcode
