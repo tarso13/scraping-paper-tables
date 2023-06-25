@@ -55,6 +55,7 @@ def download_html_locally(url, directory_name, suffix):
             local_file = f'{new_title}{suffix}.html'
             
         if local_file in downloaded_files:
+            print('Cancel download of ' + url)
             return
         
         with open(f'{directory_name}/{local_file}', 'wb') as file:

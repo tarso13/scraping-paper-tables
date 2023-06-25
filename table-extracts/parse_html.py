@@ -22,7 +22,7 @@ def domain(html_content):
     domain = urlparse(base_href).netloc
     return domain
 
-# Extract all tables from html file provided in html form an extra footnotes for aanda journals
+# Extract all tables from html file provided in html form and extra footnotes for aanda journals
 def extract_html_tables(html):
     print("\nResults for " + html)
     
@@ -32,12 +32,12 @@ def extract_html_tables(html):
     soup = BeautifulSoup(html_content, "html.parser")
     
     tables = soup.findAll("table")
-    
+    footnotes = {}
     # check for footnotes (aanda case)
     if 'A&A)_T' in html:
-        search_aanda_footnotes(html_content)
+        footnotes = search_aanda_footnotes(html_content)
     
-    return tables
+    return tables, footnotes
 
 # Search for footnotes in aanda articles 
 def search_aanda_footnotes(html_content):
@@ -48,18 +48,22 @@ def search_aanda_footnotes(html_content):
         return
     
     labels = history_div.find_all('sup')
+    footnotes_kvs = {}
     # Extract the (a), (b), (c) labels and their text
     for label in labels:
         label_name = label.get_text(strip=True)
         label_text = label.find_next('p').get_text(strip=True)
-        print(f'Found footnote with name {label_name} and text {label_text}\n')
+        footnotes_kvs[label_name] = label_text
+        # print(f'Found footnote with name {label_name} and text {label_text}\n')
+    return footnotes_kvs
         
         
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-def extract_table_data(table, title, directory_name):
+# Only valid footnotes found are returned
+def extract_table_data(table, title, footnotes, directory_name):
     json_data = {}
     key_prefix = f'headers'
     
@@ -70,16 +74,25 @@ def extract_table_data(table, title, directory_name):
     json_data[key_prefix] = json_data[key_prefix].replace(',', EMPTY)
     
     print(headers)
-    
+    valid_footnotes = {}
     for row in table.find_all("tr")[1:]:
         key_prefix = f'dataset{str(table.find_all("tr").index(row))}'
         dataset = list(td.get_text().replace('\xa0', EMPTY).replace('\n', EMPTY) for td in row.find_all("td"))      
         print(dataset)
+        
+        if footnotes:
+            for footnote in footnotes:
+                footnote_constraint = '(' in footnote and ')' in footnote
+                for data in dataset:
+                    if footnote in data and footnote_constraint:
+                        valid_footnotes[footnote] = footnotes[footnote]
+                    
         json_data[key_prefix] = str(dataset).replace('[', EMPTY).replace(']',EMPTY)
         json_data[key_prefix] = json_data[key_prefix].replace(',', EMPTY)
     
     file = open(f'{directory_name}/{title}.json', 'w', encoding='UTF8')
     file.write(json.dumps(json_data, indent=4))
+    return valid_footnotes
 
 
 # Extract all table data found in html files in given directory and print them
@@ -104,10 +117,13 @@ def extract_tables(directory_name):
             aanda_parser(directory_name, html)
             continue
        
-        tables = extract_html_tables(f'{directory_name}/{html}')
+        tables, footnotes = extract_html_tables(f'{directory_name}/{html}')
         create_directory('json_results')
         for table in tables:
-            extract_table_data(table, html.replace('.html',''), 'json_results')
+            footnotes_in_table = extract_table_data(table, html.replace('.html',''), footnotes,'json_results')
+            if len(footnotes_in_table):
+                print('Table contains footnotes: ')
+                print(footnotes_in_table)
             
 # Extract all table data found in html files with references to other htmls (aanda case) containing the actual tables
 # When extra links are identified, then the tables are extracted using extract_tables
@@ -116,6 +132,8 @@ def extract_aanda_tables_from_html_files(directory_name):
     extract_tables(directory_name)
     download_extra_html_files(directory_name, url_suffixes)
     if len(files_to_extract) != 0:
+        print('Files not extracted are: ')
+        print(files_to_extract)
         extract_tables(directory_name)
 
 # Build table suffix for local html file that contains extra table found in original html
