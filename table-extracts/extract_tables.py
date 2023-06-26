@@ -12,10 +12,10 @@ urls = [
 
 # Main function to download initial urls and extract data
 def main():
-    # print('Start downloading process...')
+    print('Start downloading process...')
     download_all_html_files('html_papers_astrophysics', urls)
-    # print('Start extracting process...')
-    # extract_tables('html_papers_astrophysics')
+    print('Start extracting process...')
+    extract_tables('html_papers_astrophysics')
     extract_aanda_tables_from_html_files('html_papers_astrophysics_aanda')
     
 main()
