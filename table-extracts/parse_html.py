@@ -69,9 +69,8 @@ def extract_table_data(table, title, footnotes, directory_name):
     headers = list(th.get_text() for th in table.find("tr").find_all("th"))
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
-    # json_data.append(re.sub(r'\\u\d+','',key_prefix + " : " + str(headers).replace("[", EMPTY).replace("]",EMPTY).replace(",", EMPTY)))
-    json_data[key_prefix] = str(headers).replace('[', EMPTY).replace(']',EMPTY)
-    json_data[key_prefix] = json_data[key_prefix].replace(',', EMPTY)
+    json_data[key_prefix] = str(headers).replace('[', '').replace(']','')
+    json_data[key_prefix] = json_data[key_prefix].replace(',', '')
     
     print(headers)
     valid_footnotes = {}
@@ -86,13 +85,11 @@ def extract_table_data(table, title, footnotes, directory_name):
                 for data in dataset:
                     if footnote in data and footnote_constraint:
                         valid_footnotes[footnote] = footnotes[footnote]
-        # # json_data.append(re.sub(r'\\u\d+','',key_prefix.replace(',', EMPTY) + " : " +str(dataset).replace('[', EMPTY).replace(']',EMPTY)))
-        # json_data[key_prefix] = json_data[key_prefix].replace(',', EMPTY)
-        json_data[key_prefix] = str(dataset).replace('[', EMPTY).replace(']',EMPTY)
-        json_data[key_prefix] = json_data[key_prefix].replace(',', EMPTY)
+        json_data[key_prefix] = str(dataset).replace('[', '').replace(']','')
+        json_data[key_prefix] = json_data[key_prefix].replace(',', '')
     
-    file = open(f'{directory_name}/{title}.json', 'w',encoding='utf-8')
-    file.write(re.sub(r'\\u\d+','',json.dumps(json_data, indent=4)))
+    file = open(f'{directory_name}/{title}.json', 'w', encoding='ASCII')
+    file.write(re.sub(r'\\u\d+','~',json.dumps(json_data, indent=4))) # '~' indicates that a specific character could not be represented
     return valid_footnotes
 
 
