@@ -12,11 +12,11 @@ urls = [
 
 # Main function to download initial urls and extract data
 def main():
-    # print('Start downloading process...')
-    # download_all_html_files('publications', urls)
+    print('Start downloading process...')
+    download_all_html_files('publications', urls)
     print('Start extracting process...')
-    # extract_tables('publications')
-    # extract_tables('publications_aanda')
+    extract_tables('publications')
+    extract_tables('publications_aanda')
     extract_tables('publications_aanda/publications_aanda_tables')
     
 main()
