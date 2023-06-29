@@ -26,12 +26,12 @@ def extract_html_tables(html_content):
 # Search for footnotes in aanda articles 
 def search_aanda_footnotes(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    history_div = soup.find('div', class_='history')
+    notes_section = soup.find('div', class_='history')
     
-    if history_div == None:
+    if notes_section == None:
         return None
     
-    labels = history_div.find_all('sup')
+    labels = notes_section.find_all('sup')
     footnotes_kvs = {}
     
     # Extract the (a), (b), (c) labels and their text
@@ -40,7 +40,22 @@ def search_aanda_footnotes(html_content):
         label_text = label.find_next('p').get_text(strip=True)
         footnotes_kvs[label_name] = label_text
     return footnotes_kvs
-        
+
+# Search and extract table description and notes 
+def search_aanda_table_info(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    notes_section = soup.find('div', class_='history')
+    description_section = soup.find('div', id='annex')
+    
+    if notes_section == None or description_section == None:
+        return None, None
+    
+    description = description_section.find('p').get_text(strip=True)
+    notes = notes_section.find('p').get_text(strip=True)
+
+    return description, notes 
+
 # Search journal metadata (authors, title, date, journal) 
 def search_aanda_metadata(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -109,7 +124,6 @@ def extract_table_data(table, title, footnotes, directory_name):
            valid_footnotes = validate_aanda_footnotes(footnotes, valid_footnotes, data)
         json_data[key_prefix] = str(data)
         json_data[key_prefix] = json_data[key_prefix].replace(',', '')
-        
     if valid_footnotes:
         print('Table contains footnotes: ')
         print(valid_footnotes)
@@ -139,12 +153,16 @@ def extract_tables(directory_name):
         print("\nResults for " + entry)
         entry_content = get_file_content(path_to_entry)
         tables = extract_html_tables(entry_content)
-        footnotes = search_aanda_footnotes(entry_content)
-        
+     
         if 'A&A' in entry and 'A&A)_T' not in entry:
            metadata = extract_aanda_metadata(entry_content)
            continue
-    
+       
+        footnotes = search_aanda_footnotes(entry_content)
+        table_description, table_notes = search_aanda_table_info(entry_content)  
+        print(f'Table contains the following info:')
+        print(f'Description: {str(table_description)}\nNotes: {str(table_notes)}')
+  
         create_directory('json_results')
         for table in tables:
             extract_table_data(table, entry.replace('.html',''), footnotes, 'json_results')
