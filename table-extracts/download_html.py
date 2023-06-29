@@ -23,7 +23,7 @@ def domain_from_url(url):
 
 # Find html title given the content of an html file
 def fetch_title(html_content):
-    soup = BeautifulSoup(html_content, "html.parser")
+    soup = BeautifulSoup(html_content, 'html.parser')
     return soup.title.string
 
 # Set up title for saved html
@@ -59,11 +59,13 @@ def download_html_locally(url, directory_name, suffix):
             print('Cancel download of ' + url)
             return
         
-        with open(f'{directory_name}/{local_file}', 'wb') as file:
+        path_to_file = os.path.join(directory_name,local_file)
+        with open(path_to_file, 'wb') as file:
             file.write(content)
             
         if 'A&A' in local_file and 'A&A)_T' not in local_file:
-            aanda_download_extra_files(content, f'{directory_name}/{directory_name}_tables', downloaded_files)
+            path_to_extra_file = f'{os.path.join(directory_name, directory_name)}_tables'
+            aanda_download_extra_files(content, path_to_extra_file, downloaded_files)
     except httplib2.HttpLib2Error as e:
         print(e, " while retrieving ", url)
 
@@ -93,8 +95,9 @@ def domain(html_content):
     domain = urlparse(base_href).netloc
     return domain
 
+# Find extra table files from initial aanda papers and download them
 def aanda_download_extra_files(content, directory_name, downloaded_files):
-    soup = BeautifulSoup(str(content), 'lxml')
+    soup = BeautifulSoup(content, 'lxml')
     table_classes = soup.findAll('div', {'class' : 'ligne'})
     url_suffixes = {}
     domain_found = domain(content)

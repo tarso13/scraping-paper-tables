@@ -13,22 +13,18 @@ EMPTY = ''
 # Map containing the (extra) url as key and the table suffix as value
 url_suffixes = {}
 
+# Get file content
+def get_file_content(filepath):
+    file = open(filepath, "r", encoding="utf-8")
+    content = file.read()
+    file.close()
+    return content
+
 # Extract all tables from html file provided in html form and extra footnotes for aanda journals
-def extract_html_tables(html):
-    print("\nResults for " + html)
-    
-    html_file = open(html, "r", encoding="utf-8")
-    html_content = html_file.read()
-    html_file.close()
+def extract_html_tables(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    
     tables = soup.findAll('table')
-    footnotes = {}
-    # check for footnotes (aanda case)
-    if 'A&A)_T' in html:
-        footnotes = search_aanda_footnotes(html_content)
-    
-    return tables, footnotes
+    return tables
 
 # Search for footnotes in aanda articles 
 def search_aanda_footnotes(html_content):
@@ -40,6 +36,7 @@ def search_aanda_footnotes(html_content):
     
     labels = history_div.find_all('sup')
     footnotes_kvs = {}
+    
     # Extract the (a), (b), (c) labels and their text
     for label in labels:
         label_name = label.get_text(strip=True)
@@ -47,7 +44,38 @@ def search_aanda_footnotes(html_content):
         footnotes_kvs[label_name] = label_text
     return footnotes_kvs
         
-        
+# authors, title, date, journal
+def search_aanda_metadata(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    metas = soup.findAll('meta')
+    authors = []
+    journal = ''
+    title = ''
+    date = ''
+    for meta in metas:
+        content = meta.get('content')
+        name = meta.get('name')
+        match name:
+            case 'citation_author':
+                authors.append(content)
+            case 'citation_journal_title':
+                journal = content
+            case 'citation_title':
+                title = content
+            case 'citation_publication_date':
+                date = content
+
+    return authors, journal, title, date
+  
+def extract_aanda_metadata(html_content):
+    authors, journal, title, publication_date = search_aanda_metadata(html_content)
+    print(f'Authors: {str(authors)}')
+    print(f'Journal: {journal}, title: {title}, publication date:{publication_date}')
+    # check for footnotes (aanda case)
+    if 'A&A)_T' in title:
+        footnotes = search_aanda_footnotes(html_content)
+    return authors, journal, title, publication_date, footnotes
+
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
@@ -77,9 +105,11 @@ def extract_table_data(table, title, footnotes, directory_name):
                         valid_footnotes[footnote] = footnotes[footnote]
         json_data[key_prefix] = str(dataset).replace('[', '').replace(']','')
         json_data[key_prefix] = json_data[key_prefix].replace(',', '')
-    
-    file = open(f'{directory_name}/{title}.json', 'w', encoding='utf-8')
+        
+    path_to_json = os.path.join(directory_name,f'{title}.json')
+    file = open(path_to_json, 'w', encoding='utf-8')
     file.write(json.dumps(json_data, indent=4))
+    
     return valid_footnotes
 
 
@@ -91,7 +121,8 @@ def extract_tables(directory_name):
         return
     
     for entry in os.listdir(directory_name):
-        if os.path.isfile(os.path.join(directory_name,entry)) == False: # os.listdir returns both directories and files included in diretory given
+        path_to_entry = os.path.join(directory_name, entry)
+        if os.path.isfile(path_to_entry) == False: # os.listdir returns both directories and files included in diretory given
             continue
             
         if entry in files_extracted:
@@ -105,7 +136,10 @@ def extract_tables(directory_name):
         if 'A&A' in entry and 'A&A)_T' not in entry:
             continue
         
-        tables, footnotes = extract_html_tables(f'{directory_name}/{entry}')
+        print("\nResults for " + entry)
+        entry_content = get_file_content(path_to_entry)
+        tables = extract_html_tables(entry_content)
+        footnotes = search_aanda_footnotes(entry_content)
         create_directory('json_results')
         for table in tables:
             footnotes_in_table = extract_table_data(table, entry.replace('.html',''), footnotes, 'json_results')
