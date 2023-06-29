@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 from tldextract import extract
+from urllib.parse import urlparse
 import os
 import httplib2
 
@@ -60,6 +61,9 @@ def download_html_locally(url, directory_name, suffix):
         
         with open(f'{directory_name}/{local_file}', 'wb') as file:
             file.write(content)
+            
+        if 'A&A' in local_file and 'A&A)_T' not in local_file:
+            aanda_download_extra_files(content, f'{directory_name}/{directory_name}_tables', downloaded_files)
     except httplib2.HttpLib2Error as e:
         print(e, " while retrieving ", url)
 
@@ -72,9 +76,44 @@ def download_all_html_files(directory_name, urls):
         if 'aanda' in domain_from_url(url):
             new_directory_name = f'{directory_name}_aanda'
         download_html_locally(url, new_directory_name, '')
+        
+# Build table suffix for local html file that contains extra table found in original html
+def table_suffix(path_to_table):
+    suffix_index  = path_to_table.find('/T')
+    html_index  = path_to_table.find('.html')
+    suffix = path_to_table[suffix_index:html_index]
+    suffix = suffix.replace('/', '_')
+    return suffix
 
+# Identify the domain name given an html content using the base href tag
+def domain(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    base = soup.find('base')
+    base_href = base['href']
+    domain = urlparse(base_href).netloc
+    return domain
+
+def aanda_download_extra_files(content, directory_name, downloaded_files):
+    soup = BeautifulSoup(str(content), 'lxml')
+    table_classes = soup.findAll('div', {'class' : 'ligne'})
+    url_suffixes = {}
+    domain_found = domain(content)
+    for table_class in table_classes:   
+        path_to_table = table_class.find('a')['href']
+        full_path = f'https://{domain_found}{path_to_table}'
+        title = setup_title(fetch_title(content))
+        suffix = table_suffix(path_to_table)
+        html_local_path = f'{title}{suffix}.html'
+        url_suffixes[full_path] = suffix
+        
+        if html_local_path in downloaded_files:
+            print(f'No need to download {full_path}')
+            url_suffixes.pop(full_path)
+        
+    download_extra_html_files(directory_name, url_suffixes)
+            
 # Download extra html files from urls and save them locally concurrently
 # Specify aanda case and save those files in different directory
-def download_extra_html_files(directory_name, urls_suffixes):
-    for url in urls_suffixes:
-        download_html_locally(url, directory_name, str(urls_suffixes[url]))
+def download_extra_html_files(directory_name, url_suffixes):
+    for url in url_suffixes:
+        download_html_locally(url, directory_name, str(url_suffixes[url]))

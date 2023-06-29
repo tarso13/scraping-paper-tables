@@ -16,6 +16,6 @@ def main():
     download_all_html_files('publications', urls)
     print('Start extracting process...')
     extract_tables('publications')
-    extract_aanda_tables_from_html_files('publications_aanda')
+    extract_tables('publications_aanda/publications_aanda_tables')
     
 main()
