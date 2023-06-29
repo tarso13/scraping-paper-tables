@@ -56,7 +56,7 @@ def download_html_locally(url, directory_name, suffix):
             local_file = f'{new_title}{suffix}.html'
             
         if local_file in downloaded_files:
-            print('Cancel download of ' + url)
+            print(f'Cancel download of {url} [Already exists]')
             return
         
         path_to_file = os.path.join(directory_name,local_file)
@@ -67,7 +67,7 @@ def download_html_locally(url, directory_name, suffix):
             path_to_extra_file = f'{os.path.join(directory_name, directory_name)}_tables'
             aanda_download_extra_files(content, path_to_extra_file, downloaded_files)
     except httplib2.HttpLib2Error as e:
-        print(e, " while retrieving ", url)
+        print(e, ' while retrieving ', url)
 
 
 # Download html files from urls and save them locally concurrently

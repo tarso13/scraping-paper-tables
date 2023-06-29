@@ -4,9 +4,6 @@ import json
 # List containing the html files with tables that have been extracted 
 files_extracted = []
 
-# List containing the (extra) html files with tables to be extracted 
-files_to_extract = []
-
 # Value used to replace undesired word occurences in datasets
 EMPTY = ''
 
@@ -32,7 +29,7 @@ def search_aanda_footnotes(html_content):
     history_div = soup.find('div', class_='history')
     
     if history_div == None:
-        return
+        return None
     
     labels = history_div.find_all('sup')
     footnotes_kvs = {}
@@ -44,7 +41,7 @@ def search_aanda_footnotes(html_content):
         footnotes_kvs[label_name] = label_text
     return footnotes_kvs
         
-# authors, title, date, journal
+# Search journal metadata (authors, title, date, journal) 
 def search_aanda_metadata(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     metas = soup.findAll('meta')
@@ -72,46 +69,54 @@ def extract_aanda_metadata(html_content):
     print(f'Authors: {str(authors)}')
     print(f'Journal: {journal}, title: {title}, publication date:{publication_date}')
     # check for footnotes (aanda case)
+    footnotes = {}
     if 'A&A)_T' in title:
         footnotes = search_aanda_footnotes(html_content)
     return authors, journal, title, publication_date, footnotes
 
+# Validates footnotes found through parsing and returns only the correct ones
+def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
+    if not footnotes:
+        return None
+    
+    for footnote in footnotes:
+        footnote_constraint = '(' in footnote and ')' in footnote
+        for data in data_found:
+            if footnote in data and footnote_constraint:
+                valid_footnotes[footnote] = footnotes[footnote]
+    return valid_footnotes        
+    
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-# Only valid footnotes found are returned
 def extract_table_data(table, title, footnotes, directory_name):
     json_data = {}
     key_prefix = f'headers'
     headers = list(th.get_text() for th in table.find("tr").find_all("th"))
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
-    json_data[key_prefix] = str(headers).replace('[', '').replace(']','')
+    json_data[key_prefix] = str(headers)
     json_data[key_prefix] = json_data[key_prefix].replace(',', '')
     
     print(headers)
     valid_footnotes = {}
     for row in table.find_all("tr")[1:]:
-        key_prefix = f'dataset{str(table.find_all("tr").index(row))}'
-        dataset = list(td.get_text().replace('\xa0', EMPTY).replace('\n', EMPTY) for td in row.find_all("td"))      
-        print(dataset)
-        
-        if footnotes:
-            for footnote in footnotes:
-                footnote_constraint = '(' in footnote and ')' in footnote
-                for data in dataset:
-                    if footnote in data and footnote_constraint:
-                        valid_footnotes[footnote] = footnotes[footnote]
-        json_data[key_prefix] = str(dataset).replace('[', '').replace(']','')
+        key_prefix = f'row{str(table.find_all("tr").index(row))}'
+        data = list(td.get_text().replace('\xa0', EMPTY).replace('\n', EMPTY) for td in row.find_all("td"))      
+        print(data)
+        if 'A&A' in title:
+           valid_footnotes = validate_aanda_footnotes(footnotes, valid_footnotes, data)
+        json_data[key_prefix] = str(data)
         json_data[key_prefix] = json_data[key_prefix].replace(',', '')
+        
+    if valid_footnotes:
+        print('Table contains footnotes: ')
+        print(valid_footnotes)
         
     path_to_json = os.path.join(directory_name,f'{title}.json')
     file = open(path_to_json, 'w', encoding='utf-8')
     file.write(json.dumps(json_data, indent=4))
-    
-    return valid_footnotes
-
 
 # Extract all table data found in html files in given directory and print them
 # If extra links for tables are included, these links are appended in links_to_extract
@@ -122,7 +127,8 @@ def extract_tables(directory_name):
     
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
-        if os.path.isfile(path_to_entry) == False: # os.listdir returns both directories and files included in diretory given
+        # os.listdir returns both directories and files included in diretory given
+        if os.path.isfile(path_to_entry) == False: 
             continue
             
         if entry in files_extracted:
@@ -130,19 +136,15 @@ def extract_tables(directory_name):
 
         files_extracted.append(entry)
         
-        if entry in files_to_extract:
-            files_to_extract.remove(entry)
-            
-        if 'A&A' in entry and 'A&A)_T' not in entry:
-            continue
-        
         print("\nResults for " + entry)
         entry_content = get_file_content(path_to_entry)
         tables = extract_html_tables(entry_content)
         footnotes = search_aanda_footnotes(entry_content)
+        
+        if 'A&A' in entry and 'A&A)_T' not in entry:
+           metadata = extract_aanda_metadata(entry_content)
+           continue
+    
         create_directory('json_results')
         for table in tables:
-            footnotes_in_table = extract_table_data(table, entry.replace('.html',''), footnotes, 'json_results')
-            if len(footnotes_in_table):
-                print('Table contains footnotes: ')
-                print(footnotes_in_table)
+            extract_table_data(table, entry.replace('.html',''), footnotes, 'json_results')
