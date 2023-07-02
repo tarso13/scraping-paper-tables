@@ -20,10 +20,28 @@ def get_file_content(filepath):
     file.close()
     return content
 
-# Extract all tables from html file provided in html form and extra footnotes for aanda journals
-def extract_html_tables(html_content):
+# Replace sup tags with '^' indicating power exponentiation
+# Span text is replaced with the expression combining both the span tag content as well as the sup tag contents
+def replace_sup_tags(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    tables = soup.findAll('table')
+    span_tags = soup.find_all('span', class_='simple-math')
+    # Iterate over each span tag and replace the value within the <sup> tag
+    for span_tag in span_tags:
+        sup_tag = span_tag.find('sup')
+        if sup_tag == None:
+            continue
+        sup_text = sup_tag.get_text()
+        sup_tag.contents[0].string.replace_with('')
+        span_text = span_tag.contents[0].string
+        span_text += f'^{sup_text}'
+        span_tag.contents[0].string.replace_with(span_text)        
+    return soup
+
+# Extract all tables from html file provided in html form and extra footnotes for aanda journals
+# Also replace sup tags with real values to display
+def extract_html_tables(html_content):
+    updated_soup = replace_sup_tags(html_content)
+    tables = updated_soup.find_all('table')
     return tables
 
 # Search for footnotes in aanda articles
@@ -51,15 +69,15 @@ def search_aanda_table_info(html_content):
 
     notes_section = soup.find('div', class_='history')
     description_section = soup.find('div', id='annex')
-    
+
     if notes_section == None:
         table_info['description'] = description_section.find(
-        'p').get_text(strip=True)
+            'p').get_text(strip=True)
         return table_info
-    
+
     if description_section == None:
         return None
-    
+
     table_info['description'] = description_section.find(
         'p').get_text(strip=True)
     table_info['notes'] = notes_section.find(
@@ -70,7 +88,7 @@ def search_aanda_table_info(html_content):
 # Search journal metadata (authors, title, date, journal) and return a map with the values (in json format)
 def search_aanda_metadata(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    metas = soup.findAll('meta')
+    metas = soup.find_all('meta')
     metadata = {}
     authors = []
     for meta in metas:
@@ -88,7 +106,7 @@ def search_aanda_metadata(html_content):
     metadata['author(s)'] = authors
     return metadata
 
-# Extract aanda journal metadata 
+# Extract aanda journal metadata
 def extract_aanda_metadata(html_content):
     metadata = search_aanda_metadata(html_content)
     return metadata
@@ -110,7 +128,7 @@ def search_and_add_footnote_to_obj(footnotes, entry, json_obj):
     for footnote in footnotes:
         if footnote in entry:
             json_obj[footnote] = footnotes[footnote]
-            
+
 # Convert list of data extracted from table to json array
 def convert_to_json_array(list, json_data, key_prefix, footnotes):
     json_objects = []
@@ -128,7 +146,7 @@ def convert_to_json_array(list, json_data, key_prefix, footnotes):
 def table_info_to_json_data(metadata, table_info, json_data):
     json_data['metadata'] = metadata
     json_data['table info'] = table_info
-    
+
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
@@ -142,10 +160,10 @@ def extract_table_data(table, title, footnotes, metadata, table_info):
     headers = list(th.get_text() for th in table.find("tr").find_all("th"))
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
-        
+
     print(headers)
     convert_to_json_array(headers, json_data, key_prefix, None)
-    
+
     valid_footnotes = {}
     for row in table.find_all("tr")[1:]:
         key_prefix = f'row{str(table.find_all("tr").index(row))}'
@@ -155,10 +173,11 @@ def extract_table_data(table, title, footnotes, metadata, table_info):
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
                 footnotes, valid_footnotes, data_found)
-        convert_to_json_array(data_found, json_data, key_prefix, valid_footnotes)
+        convert_to_json_array(data_found, json_data,
+                              key_prefix, valid_footnotes)
     write_to_json_file('json_results', title, json_data)
 
-# Write json data to json file 
+# Write json data to json file
 # Title is the title of the json file
 # Directory name is the directory the json file will be stored
 def write_to_json_file(directory_name, title, json_data):
@@ -174,7 +193,7 @@ def search_aanda_journal_metadata(journal):
         if aanda_file.replace('.html', '') in journal:
             metadata = title_to_metadata[aanda_file]
     return metadata
- 
+
 # Extract all table data found in html files in given directory and print them
 # If extra links for tables are included, these links are appended in links_to_extract
 # and are handled after the simple ones
@@ -196,20 +215,20 @@ def extract_tables(directory_name):
         print("\nResults for " + entry)
         entry_content = get_file_content(path_to_entry)
         tables = extract_html_tables(entry_content)
-        
-        
+
         if 'A&A' in entry and 'A&A)_T' not in entry:
             title_to_metadata[entry] = extract_aanda_metadata(entry_content)
             continue
-         
+
         footnotes = search_aanda_footnotes(entry_content)
         table_info = search_aanda_table_info(entry_content)
         metadata = search_aanda_journal_metadata(entry)
-        
-        for table in tables: 
+
+        for table in tables:
             extract_table_data(table, entry.replace(
                 '.html', ''), footnotes, metadata, table_info)
-                  
+
     if 'aanda' in directory_name and '_tables' not in directory_name:
-        tables_directory = os.path.join(directory_name, f'{directory_name}_tables')
+        tables_directory = os.path.join(
+            directory_name, f'{directory_name}_tables')
         extract_tables(tables_directory)
