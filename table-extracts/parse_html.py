@@ -1,5 +1,6 @@
 from download_html import *
 import json
+from upload_elastic_index import upload_index
 
 # List containing the html files with tables that have been extracted
 files_extracted = []
@@ -151,7 +152,7 @@ def table_info_to_json_data(metadata, table_info, json_data):
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-def extract_table_data(table, title, footnotes, metadata, table_info):
+def extract_table_data(table, title, footnotes, metadata, table_info, index_id):
     json_data = {}
 
     table_info_to_json_data(metadata, table_info, json_data)
@@ -175,7 +176,8 @@ def extract_table_data(table, title, footnotes, metadata, table_info):
                 footnotes, valid_footnotes, data_found)
         convert_to_json_array(data_found, json_data,
                               key_prefix, valid_footnotes)
-    write_to_json_file('json_results', title, json_data)
+    # write_to_json_file('json_results', title, json_data)
+    upload_json_index(index_id, title, str(json_data))
 
 # Write json data to json file
 # Title is the title of the json file
@@ -186,7 +188,12 @@ def write_to_json_file(directory_name, title, json_data):
     file = open(path_to_json, 'w', encoding='utf-8')
     file.write(json.dumps(json_data, indent=1))
 
-# Search for metadata in initial aanda journal (without the tables)
+# Upload index on elasticsearch
+def upload_json_index(index_id, title, content):
+    upload_index(index_id, title.lower(), content)
+    
+# Search for metadata in initial aanda
+# journal (without the tables)
 def search_aanda_journal_metadata(journal):
     metadata = {}
     for aanda_file in list(title_to_metadata.keys()):
@@ -226,7 +233,7 @@ def extract_tables(directory_name):
 
         for table in tables:
             extract_table_data(table, entry.replace(
-                '.html', ''), footnotes, metadata, table_info)
+                '.html', ''), footnotes, metadata, table_info, os.listdir(directory_name).index(entry))
 
     if 'aanda' in directory_name and '_tables' not in directory_name:
         tables_directory = os.path.join(
