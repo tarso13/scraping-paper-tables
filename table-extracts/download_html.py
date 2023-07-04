@@ -6,7 +6,7 @@ import httplib2
 
 # List of invalid words which may be encountered in paper titles
 invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!',
-                               '`', '*', "'", '|', '{', '?', '=', '}', '/', ':', '"', '\\', '@']
+                               '`', '*', "'", '|', '{', '?', '=', '}', '/', ':', '"', '\\', '@', ',']
 
 # Create a directory with the name given (if it does not exist)
 def create_directory(directory_name):
