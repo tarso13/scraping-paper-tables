@@ -12,13 +12,14 @@ token=get_password('nasa_ads_token.txt')
 # which can be found here: https://adsabs.harvard.edu/abs_doc/journals1.html#
 # If query is an author, use 'author:full_name' or 'full_name'
 # For more info about what can be used as a query, use this guide: https://ui.adsabs.harvard.edu/help/search/
-def build_ads_query(query, start_year, end_year, return_value, results):
+def build_ads_query(query_constraint, start_year, end_year, return_value, results):
     query = {}
     if start_year == None or end_year == None:
-        query = {"q": query, "fl": return_value, "rows": results}
+        query = {"q": query_constraint, "fl": return_value, "rows": results}
     else:
         period_of_time = "year:[" + str(start_year) + " TO " + str(end_year) + "]"
-        query = {"q": query, "fq": period_of_time, "fl": return_value, "rows": results}
+        query = {"q": query_constraint, "fq": period_of_time, "fl": return_value, "rows": results}
+    print(query)
     encoded_query = urlencode(query)
     return encoded_query
 
@@ -31,6 +32,7 @@ def get_ads_query_results(encoded_query):
 # Extract bibcode from ads query json results
 def extract_bibcode_from_results(query_results):
     json_results = query_results.json()
+    print(json_results)
     json_response = json_results['response']
     json_docs = json_response['docs']
     bibcode_kv = str(json_docs[0])
@@ -51,7 +53,7 @@ def extract_url_from_bibcode(bibcode, format):
 # between 2020 and 2023
 def main():
     constraint = 'bibstem:A&A'
-    ads_query = build_ads_query(constraint, 2020, 2023, 'bibcode', 1)
+    ads_query = build_ads_query(constraint, 2020, 2023, "bibcode", 1)
     ads_query_results = get_ads_query_results(ads_query)
     bibcode = extract_bibcode_from_results(ads_query_results)
     url = extract_url_from_bibcode(bibcode, 'HTML')
