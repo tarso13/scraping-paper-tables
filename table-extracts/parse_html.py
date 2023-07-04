@@ -230,12 +230,7 @@ def extract_tables(directory_name):
         footnotes = search_aanda_footnotes(entry_content)
         table_info = search_aanda_table_info(entry_content)
         metadata = search_aanda_journal_metadata(entry)
-
+       
         for table in tables:
             extract_table_data(table, entry.replace(
                 '.html', ''), footnotes, metadata, table_info, os.listdir(directory_name).index(entry))
-
-    if 'aanda' in directory_name and '_tables' not in directory_name:
-        tables_directory = os.path.join(
-            directory_name, f'{directory_name}_tables')
-        extract_tables(tables_directory)
