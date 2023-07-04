@@ -176,7 +176,7 @@ def extract_table_data(table, title, footnotes, metadata, table_info, index_id):
                 footnotes, valid_footnotes, data_found)
         convert_to_json_array(data_found, json_data,
                               key_prefix, valid_footnotes)
-    # write_to_json_file('json_results', title, json_data)
+    write_to_json_file('json_results', title, json_data)
     upload_json_index(index_id, title, str(json_data))
 
 # Write json data to json file
@@ -221,16 +221,17 @@ def extract_tables(directory_name):
 
         print("\nResults for " + entry)
         entry_content = get_file_content(path_to_entry)
-        tables = extract_html_tables(entry_content)
-
+   
         if 'A&A' in entry and 'A&A)_T' not in entry:
             title_to_metadata[entry] = extract_aanda_metadata(entry_content)
             continue
+        
+        tables = extract_html_tables(entry_content)
 
         footnotes = search_aanda_footnotes(entry_content)
         table_info = search_aanda_table_info(entry_content)
         metadata = search_aanda_journal_metadata(entry)
-       
+    
         for table in tables:
             extract_table_data(table, entry.replace(
                 '.html', ''), footnotes, metadata, table_info, os.listdir(directory_name).index(entry))

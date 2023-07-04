@@ -59,16 +59,14 @@ def download_html_locally(url, directory_name, suffix):
             print(f'Cancel download of {url} [Already exists]')
             return
         
-        if 'A&A' in local_file and 'A&A)_T' not in local_file:
-            path_to_extra_file = f'{os.path.join(directory_name, directory_name)}_tables'
-            aanda_download_extra_files(content, path_to_extra_file, downloaded_files)
-            return
-        
         path_to_file = os.path.join(directory_name, local_file)
 
         with open(path_to_file, 'wb') as file:
             file.write(content)
-            
+        
+        if 'A&A' in local_file and 'A&A)_T' not in local_file:
+          path_to_extra_file = f'{os.path.join(directory_name, directory_name)}_tables'
+          aanda_download_extra_files(content, path_to_extra_file, downloaded_files)
     except httplib2.HttpLib2Error as e:
         print(e, ' while retrieving ', url)
 
