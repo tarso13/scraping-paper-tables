@@ -17,9 +17,8 @@ def build_ads_query(query_constraint, start_year, end_year, return_value, result
     if start_year == None or end_year == None:
         query = {"q": query_constraint, "fl": return_value, "rows": results}
     else:
-        period_of_time = "year:[" + str(start_year) + " TO " + str(end_year) + "]"
+        period_of_time = f'year:[{str(start_year)} TO {str(end_year)}]'
         query = {"q": query_constraint, "fq": period_of_time, "fl": return_value, "rows": results}
-    print(query)
     encoded_query = urlencode(query)
     return encoded_query
 
@@ -30,33 +29,46 @@ def get_ads_query_results(encoded_query):
     return query_results
 
 # Extract bibcode from ads query json results
-def extract_bibcode_from_results(query_results):
+# Number of results is the amount of results expected from previous query 
+def extract_bibcode_from_results(query_results, number_of_results):
+    bibcodes = []
     json_results = query_results.json()
-    print(json_results)
     json_response = json_results['response']
     json_docs = json_response['docs']
-    bibcode_kv = str(json_docs[0])
     # extract bibcode bibcode kv is in the form:
     # { "bibcode" : 'xxxxxxxxxx'}
-    position = bibcode_kv.find(": '")
-    final_bibcode = bibcode_kv[position + 3 : bibcode_kv.find("'}")]
-    return final_bibcode
+    for i in range(number_of_results):
+        bibcode_kv = str(json_docs[i])
+        position = bibcode_kv.find(": '")
+        final_bibcode = bibcode_kv[position + 3 : bibcode_kv.find("'}")]
+        bibcode_kv.replace(final_bibcode,'')
+        bibcodes.append(final_bibcode)
+        i += 1
+    return bibcodes
 
 
-# Extract the ads url for given bibcode and format
+# Extract single ads url for given bibcode and format
 # Note: format should either be "HTML" or "PDF" (Use capital letters in order for api to work)
 def extract_url_from_bibcode(bibcode, format):
-    url_results = requests.get(f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/PUB_'+ format) 
+    url_results = requests.get(f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/PUB_{format}') 
     return url_results.url
+
+# Extract ads urls for given bibcodes and format
+# Bibcodes is a list with bibcodes to be extracted
+# Note: format should either be "HTML" or "PDF" (Use capital letters in order for api to work)
+def extract_urls_from_bibcodes(bibcodes, format):
+    for bibcode in bibcodes:
+        url = extract_url_from_bibcode(bibcode, format)
+        print(f'ADS result #{str(bibcodes.index(bibcode) + 1)}: {url}')
 
 # A simple example of building an ads query to get url for an aanda journal published 
 # between 2020 and 2023
 def main():
     constraint = 'bibstem:A&A'
-    ads_query = build_ads_query(constraint, 2020, 2023, "bibcode", 1)
+    number_of_results = 15
+    ads_query = build_ads_query(constraint, 2020, 2023, 'bibcode', number_of_results)
     ads_query_results = get_ads_query_results(ads_query)
-    bibcode = extract_bibcode_from_results(ads_query_results)
-    url = extract_url_from_bibcode(bibcode, 'HTML')
-    print(f'ADS returned: {url}')
+    bibcodes = extract_bibcode_from_results(ads_query_results, number_of_results)
+    extract_urls_from_bibcodes(bibcodes)
     
 main()
