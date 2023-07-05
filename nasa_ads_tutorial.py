@@ -70,6 +70,6 @@ def main():
     ads_query = build_ads_query(constraint, 2020, 2023, 'bibcode', number_of_results)
     ads_query_results = get_ads_query_results(ads_query)
     bibcodes = extract_bibcode_from_results(ads_query_results, number_of_results)
-    extract_urls_from_bibcodes(bibcodes, format='HTML')
+    extract_urls_from_bibcodes(bibcodes, format)
     
 main()

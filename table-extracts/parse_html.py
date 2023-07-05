@@ -1,6 +1,6 @@
 from download_html import *
 import json
-from upload_elastic_index import upload_index
+from upload_elastic_index import *
 
 # List containing the html files with tables that have been extracted
 files_extracted = []
@@ -152,9 +152,8 @@ def table_info_to_json_data(metadata, table_info, json_data):
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-def extract_table_data(table, title, footnotes, metadata, table_info, index_id):
+def extract_table_data(table, title, footnotes, metadata, table_info):
     json_data = {}
-
     table_info_to_json_data(metadata, table_info, json_data)
 
     key_prefix = f'headers'
@@ -177,7 +176,7 @@ def extract_table_data(table, title, footnotes, metadata, table_info, index_id):
         convert_to_json_array(data_found, json_data,
                               key_prefix, valid_footnotes)
     write_to_json_file('json_results', title, json_data)
-    upload_json_index(index_id, title, str(json_data))
+    return json_data
 
 # Write json data to json file
 # Title is the title of the json file
@@ -189,8 +188,8 @@ def write_to_json_file(directory_name, title, json_data):
     file.write(json.dumps(json_data, indent=1))
 
 # Upload index on elasticsearch
-def upload_json_index(index_id, title, content):
-    upload_index(index_id, title.lower(), content)
+def append_json_index(actions, parent_index, doc_index_id, title, content):
+    add_document_to_actions(actions, parent_index, doc_index_id, title, content)
     
 # Search for metadata in initial aanda
 # journal (without the tables)
@@ -207,7 +206,8 @@ def search_aanda_journal_metadata(journal):
 def extract_tables(directory_name):
     if os.path.exists(directory_name) == False:
         return
-
+    parent_index = ''
+    actions = []
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
         # os.listdir returns both directories and files included in diretory given
@@ -227,11 +227,16 @@ def extract_tables(directory_name):
             continue
         
         tables = extract_html_tables(entry_content)
-
+        parent_index = 'a&a'
         footnotes = search_aanda_footnotes(entry_content)
         table_info = search_aanda_table_info(entry_content)
         metadata = search_aanda_journal_metadata(entry)
-    
+        index_parent(parent_index, 1)
         for table in tables:
-            extract_table_data(table, entry.replace(
-                '.html', ''), footnotes, metadata, table_info, os.listdir(directory_name).index(entry))
+            json_data = extract_table_data(table, entry.replace(
+                '.html', ''), footnotes, metadata, table_info)
+            doc_index_id = os.listdir(directory_name).index(entry)
+            append_json_index(actions, parent_index, doc_index_id, metadata['title'], json_data)
+        upload_docs_to_index(parent_index, actions)
+        
+            
