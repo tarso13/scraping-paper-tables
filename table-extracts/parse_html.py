@@ -72,17 +72,17 @@ def search_aanda_table_info(html_content):
     description_section = soup.find('div', id='annex')
 
     if notes_section == None:
-        table_info['description'] = description_section.find(
+        table_info['context'] = description_section.find(
             'p').get_text(strip=True)
         return table_info
 
     if description_section == None:
         return None
 
-    table_info['description'] = description_section.find(
+    table_info['context'] = description_section.find(
         'p').get_text(strip=True)
     table_info['notes'] = notes_section.find(
-        'p').get_text(strip=True).replace('Notes.', '')
+        'p').get_text(strip=True)
 
     return table_info
 
@@ -128,7 +128,8 @@ def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
 def search_and_add_footnote_to_obj(footnotes, entry, json_obj):
     for footnote in footnotes:
         if footnote in entry:
-            json_obj[footnote] = footnotes[footnote]
+            json_obj['content'] = json_obj['content'].replace(footnote, '')
+            json_obj['note'] = footnotes[footnote]
 
 # Convert list of data extracted from table to json array
 def convert_to_json_array(list, json_data, key_prefix, footnotes):
@@ -136,9 +137,9 @@ def convert_to_json_array(list, json_data, key_prefix, footnotes):
     counter = 1
     for entry in list:
         json_obj = {}
-        json_obj[counter] = entry
+        json_obj[counter] = {'content' : entry}
         if footnotes:
-            search_and_add_footnote_to_obj(footnotes, entry, json_obj)
+            search_and_add_footnote_to_obj(footnotes, entry, json_obj[counter])
         json_objects.append(json_obj)
         counter += 1
     json_data[key_prefix] = json_objects
@@ -187,8 +188,8 @@ def write_to_json_file(directory_name, title, json_data):
     file = open(path_to_json, 'w', encoding='utf-8')
     file.write(json.dumps(json_data, indent=1))
 
-# Upload index on elasticsearch
-def append_json_index(actions, parent_index, doc_index_id, title, content):
+# Append document to actions in order to update the parent elastic index
+def append_to_elastic_index(actions, parent_index, doc_index_id, title, content):
     add_document_to_actions(actions, parent_index, doc_index_id, title, content)
     
 # Search for metadata in initial aanda
@@ -236,7 +237,7 @@ def extract_tables(directory_name):
             json_data = extract_table_data(table, entry.replace(
                 '.html', ''), footnotes, metadata, table_info)
             doc_index_id = os.listdir(directory_name).index(entry)
-            append_json_index(actions, parent_index, doc_index_id, metadata['title'], json_data)
-        upload_docs_to_index(parent_index, actions)
+            append_to_elastic_index(actions, parent_index, doc_index_id, metadata['title'], json_data)
+        upload_new_index(parent_index, actions)
         
             
