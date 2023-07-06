@@ -21,21 +21,17 @@ def get_file_content(filepath):
     file.close()
     return content
 
-# Replace sup tags with '^' indicating power exponentiation
-# Span text is replaced with the expression combining both the span tag content as well as the sup tag contents
+# Include '^' in sup tags text indicating power exponentiation
 def replace_sup_tags(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    span_tags = soup.find_all('span', class_='simple-math')
-    # Iterate over each span tag and replace the value within the <sup> tag
-    for span_tag in span_tags:
-        sup_tag = span_tag.find('sup')
-        if sup_tag == None:
-            continue
+  
+    sup_tags = soup.find_all('sup')
+    if sup_tags == None:
+        return
+    for sup_tag in sup_tags:
         sup_text = sup_tag.get_text()
-        sup_tag.contents[0].string.replace_with('')
-        span_text = span_tag.contents[0].string
-        span_text += f'^{sup_text}'
-        span_tag.contents[0].string.replace_with(span_text)        
+        sup_tag.contents[0].string.replace_with(f'^{sup_text}')
+         
     return soup
 
 # Extract all tables from html file provided in html form and extra footnotes for aanda journals
@@ -128,7 +124,7 @@ def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
 def search_and_add_footnote_to_obj(footnotes, entry, json_obj):
     for footnote in footnotes:
         if footnote in entry:
-            json_obj['content'] = json_obj['content'].replace(footnote, '')
+            json_obj['content'] = json_obj['content'].replace(f'^{str(footnote)}', '')
             json_obj['note'] = footnotes[footnote]
 
 # Convert list of data extracted from table to json array
@@ -186,7 +182,7 @@ def write_to_json_file(directory_name, title, json_data):
     create_directory(directory_name)
     path_to_json = os.path.join(directory_name, f'{title}.json')
     file = open(path_to_json, 'w', encoding='utf-8')
-    file.write(json.dumps(json_data, indent=1))
+    file.write(json.dumps(json_data))
 
 # Append document to actions in order to update the parent elastic index
 def append_to_elastic_index(actions, parent_index, doc_index_id, title, content):

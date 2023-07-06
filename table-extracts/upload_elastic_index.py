@@ -23,11 +23,12 @@ def index_parent(parent_index, parent_index_id):
 # Define action and document data and append them to actions to update the parent index
 def add_document_to_actions(actions, parent_index, doc_index_id, title, content):
     action = {"index": {"_index": parent_index, "_id": doc_index_id}}
-   
+    
     doc = {
         "title": title,
         "content": content,
     }
+    
     actions.append(action)
     actions.append(doc)
 
@@ -42,4 +43,4 @@ def upload_new_index(parent_index, actions):
         basic_auth=["elastic", elastic_password],
     )
     
-    es.bulk(index=parent_index, operations=actions)
+    es.bulk(index=parent_index, operations=actions) 
