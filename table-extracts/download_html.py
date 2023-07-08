@@ -78,6 +78,8 @@ def download_all_html_files(directory_name, urls):
         new_directory_name = directory_name
         if 'aanda' in domain_from_url(url):
             new_directory_name = f'{directory_name}_aanda'
+        if 'iopscience' in domain_from_url(url):
+            new_directory_name = f'{directory_name}_iopscience'
         download_html_locally(url, new_directory_name, '')
         
 # Build table suffix for local html file that contains extra table found in original html

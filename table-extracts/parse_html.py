@@ -34,11 +34,23 @@ def replace_sup_tags(html_content):
          
     return soup
 
+# Include '_' in sub tags text indicating subscripts
+def replace_sub_tags(soup):
+    sub_tags = soup.find_all('sub')
+    if sub_tags == None:
+        return
+    for sub_tag in sub_tags:
+        sub_text = sub_tag.get_text()
+        sub_tag.contents[0].string.replace_with(f'_{sub_text}')
+         
+    return soup
+
 # Extract all tables from html file provided in html form and extra footnotes for aanda journals
-# Also replace sup tags with real values to display
+# Also replace sup and sub tags representing actual values 
 def extract_html_tables(html_content):
     updated_soup = replace_sup_tags(html_content)
-    tables = updated_soup.find_all('table')
+    re_updated_soup = replace_sub_tags(updated_soup)
+    tables = re_updated_soup.find_all('table')
     return tables
 
 # Search for footnotes in aanda articles
@@ -120,22 +132,37 @@ def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
                 valid_footnotes[footnote] = footnotes[footnote]
     return valid_footnotes
 
-# Search for footnote in entry and if found, add it to the json object the entry belongs to
-def search_and_add_footnote_to_obj(footnotes, entry, json_obj):
+# Search for footnote in aanda entry and if found, add it to the json object the entry belongs to
+def search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj):
     for footnote in footnotes:
         if footnote in entry:
             json_obj['content'] = json_obj['content'].replace(f'^{str(footnote)}', '')
             json_obj['note'] = footnotes[footnote]
 
+# Search for footnote in IOPscience list of data and if found, add it to the json object the entry belongs to
+def search_and_add_iopscience_footnote_to_obj(footnotes, data, json_obj):
+    for footnote in footnotes:
+        index = footnotes.index(footnote)
+        for key in footnote.keys():
+            if f'^{key}' in data:
+                json_obj['content'] = json_obj['content'].replace(f'^{str(key)}', '')
+                note = footnotes[index]
+                note[key] = note[key].replace('Note. ', '')
+                position = note[key].find(key)
+                json_obj['note'] = note[key][position + 1:len(note[key])]
+                footnotes.remove(footnote)
+                    
 # Convert list of data extracted from table to json array
-def convert_to_json_array(list, json_data, key_prefix, footnotes):
+def convert_to_json_array(list, json_data, key_prefix, footnotes, journal):
     json_objects = []
     counter = 1
     for entry in list:
         json_obj = {}
         json_obj[counter] = {'content' : entry}
-        if footnotes:
-            search_and_add_footnote_to_obj(footnotes, entry, json_obj[counter])
+        if journal == 'A&A' and footnotes:
+            search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj[counter])
+        if journal == 'IOPscience' and footnotes:
+            search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj[counter])
         json_objects.append(json_obj)
         counter += 1
     json_data[key_prefix] = json_objects
@@ -149,30 +176,64 @@ def table_info_to_json_data(metadata, table_info, json_data):
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-def extract_table_data(table, title, footnotes, metadata, table_info):
+def extract_table_data(table, title, footnotes, metadata, table_info, table_number):
     json_data = {}
-    # table_info_to_json_data(metadata, table_info, json_data)
+    
+    current_table_info = {}
+    if 'A&A' in title:
+        current_table_info = table_info
+        
+    if 'IOPscience' in title:
+        current_table_info['context'] = table_info['context'][table_number]
+        current_table_info['notes'] = table_info['notes'][table_number]
+        if current_table_info['notes'] == '':
+            current_table_info.pop('notes')
+        
+    table_info_to_json_data(metadata, current_table_info, json_data)
 
     key_prefix = f'headers'
-    headers = list(th.get_text() for th in table.find("tr").find_all("th"))
+    headers = []
+    extra_headers = []
+    
+    counter = 0
+    key_prefix = f'headers'
+    for tr in table.find_all("tr"):
+        counter += 1
+        for th in tr.find_all("th"):
+            if counter > 1:
+                extra_headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
+                continue
+            headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
+
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
 
     print(headers)
-    # convert_to_json_array(headers, json_data, key_prefix, None)
-
+    print('Extra headers: ' + str(extra_headers))
+    
+    if 'IOPscience' in title:
+        convert_to_json_array(headers, json_data, key_prefix, footnotes, 'IOPscience')
+        if len(extra_headers) != 0:
+            key_prefix = f'extra_{key_prefix}'
+            convert_to_json_array(extra_headers, json_data, key_prefix, None, 'IOPscience')
+    else:
+        convert_to_json_array(headers, json_data, key_prefix, None, 'A&A')
+        
     valid_footnotes = {}
     for row in table.find_all("tr")[1:]:
         key_prefix = f'row{str(table.find_all("tr").index(row))}'
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
             '\n', EMPTY) for td in row.find_all("td"))
         print(data_found)
-        # if 'A&A' in title:
-        #     valid_footnotes = validate_aanda_footnotes(
-        #         footnotes, valid_footnotes, data_found)
-        # convert_to_json_array(data_found, json_data,
-        #                       key_prefix, valid_footnotes)
-    write_to_json_file('json_results', title, json_data)
+        if 'A&A' in title:
+            valid_footnotes = validate_aanda_footnotes(
+                footnotes, valid_footnotes, data_found)
+        
+        convert_to_json_array(data_found, json_data,
+                           key_prefix, valid_footnotes, 'A&A')
+      
+            
+    write_to_json_file('json_results', f'{title}', json_data)
     return json_data
 
 # Write json data to json file
@@ -182,7 +243,7 @@ def write_to_json_file(directory_name, title, json_data):
     create_directory(directory_name)
     path_to_json = os.path.join(directory_name, f'{title}.json')
     file = open(path_to_json, 'w', encoding='utf-8')
-    file.write(json.dumps(json_data))
+    file.write(json.dumps(json_data, indent = 1))
 
 # Append document to actions in order to update the parent elastic index
 def append_to_elastic_index(actions, parent_index, doc_index_id, title, content):
@@ -198,7 +259,7 @@ def search_aanda_journal_metadata(journal):
     return metadata
 
 # Search for footnotes in iopscience journal
-def search_iopscience_footnotes(journal):
+def search_iopscience_footnotes(journal, table_info):
     soup = BeautifulSoup(journal, 'html.parser')
   
     small_tags = soup.find_all('small')
@@ -214,8 +275,11 @@ def search_iopscience_footnotes(journal):
         if sup_text == None:
             continue
         if sup_text.isalpha():
-            footnote_value = small_tag.get_text().replace(' ', '').replace('\n', '')
+            footnote_value = small_tag.get_text().replace('\n', '')
             footnotes.append({sup_text : footnote_value})
+            if footnote_value in table_info['notes']:
+                index = table_info['notes'].index(footnote_value)
+                table_info['notes'][index] = ''
            
     return footnotes
 
@@ -231,7 +295,7 @@ def search_iopscience_table_notes(journal):
         strong_tag = small_tag.find('strong')
         if strong_tag == None:
             continue 
-        notes.append({small_tag.get_text().replace('\n', '')})
+        notes.append(small_tag.get_text().replace('\n', ''))
     return notes
 
 # Search for table contexts in iopscience journal
@@ -246,7 +310,7 @@ def search_iopscience_table_contexts(journal):
         if 'Table' not in b_tag.get_text():
             continue
         p_text = p_tag.get_text().replace(b_tag.get_text(), '').replace('\xa0', EMPTY)
-        contexts.append({p_text})
+        contexts.append(p_text)
     return contexts
 
 # Search for table info in iopscience journal, including notes and context
@@ -264,6 +328,7 @@ def extract_tables(directory_name):
         return
     parent_index = ''
     actions = []
+    iopscience_counter = 0
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
         # os.listdir returns both directories and files included in diretory given
@@ -285,26 +350,31 @@ def extract_tables(directory_name):
         tables = extract_html_tables(entry_content)
         parent_index = ''
         parent_index_id = 0
+        footnotes = {}
+        metadata = {}
         if 'A&A' in entry:
             parent_index = 'a&a'
             parent_index_id = 1
             footnotes =  search_aanda_footnotes(entry_content)
             table_info = search_aanda_table_info(entry_content)
             metadata = search_aanda_journal_metadata(entry)
+            iopscience_counter += 1
          
         if 'IOPscience' in entry:
             parent_index = 'iopscience'
             parent_index_id = 2
-            footnotes =  search_iopscience_footnotes(entry_content)
             table_info = search_iopscience_table_info(entry_content)
+            footnotes =  search_iopscience_footnotes(entry_content, table_info)
             metadata = extract_journal_metadata(entry_content)
             
         # index_parent(parent_index, parent_index_id)
 
         for table in tables:
-            table_info = None
-            json_data = extract_table_data(table, entry.replace(
-                '.html', ''), footnotes, metadata, table_info)
+            title = entry.replace('.html', '')
+            index = tables.index(table)
+            if 'IOPscience' in title:
+                title += f'_T{str(index + 1)}'
+            json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
             doc_index_id = os.listdir(directory_name).index(entry)
             # append_to_elastic_index(actions, parent_index, doc_index_id, metadata['title'], json_data)
         # upload_new_index(parent_index, actions)
