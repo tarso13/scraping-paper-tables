@@ -358,15 +358,14 @@ def extract_tables(directory_name):
         
         if 'A&A' in entry:
             parent_index = 'a&a'
-            parent_index_id = 1
+            parent_index_id = 0
             footnotes =  search_aanda_footnotes(entry_content)
             table_info = search_aanda_table_info(entry_content)
             metadata = search_aanda_journal_metadata(entry)
-            iopscience_counter += 1
          
         if 'IOPscience' in entry:
             parent_index = 'iopscience'
-            parent_index_id = 2
+            parent_index_id = 1
             table_info = search_iopscience_table_info(entry_content)
             footnotes =  search_iopscience_footnotes(entry_content, table_info)
             metadata = extract_journal_metadata(entry_content)
@@ -374,13 +373,16 @@ def extract_tables(directory_name):
         index_parent(parent_index, parent_index_id)
 
         for table in tables:
+            doc_index_id = 0
             title = entry.replace('.html', '')
             index = tables.index(table)
             if 'IOPscience' in title:
                 title += f'_T{str(index + 1)}'
+                doc_index_id = index
+            
+            if 'A&A' in title:
+                doc_index_id = os.listdir(directory_name).index(entry) + 1
+            
             json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
-            doc_index_id = os.listdir(directory_name).index(entry)
-            print('Appending ' + str(actions) + str(parent_index) + str(doc_index_id) + str(metadata['title']) + str(json_data))
-            append_to_elastic_index(actions, parent_index, doc_index_id, metadata['title'], json_data)
-        print('Uploading ' + str(parent_index) + str(actions))
+            append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
         upload_new_index(parent_index, actions)

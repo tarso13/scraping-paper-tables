@@ -42,5 +42,21 @@ def upload_new_index(parent_index, actions):
         [{"host": "127.0.0.1", "port": 9200, "scheme": "http"}],
         basic_auth=["elastic", elastic_password],
     )
-    
+
     es.bulk(index=parent_index, operations=actions) 
+    
+    result = es.count(index=parent_index)   
+    print('Documents that belong to this index: ' + str(result.body['count']))  
+    
+# Read elastic password from file so as to keep it private  
+# Create a connection to Elasticsearch
+# Delete index given (for debugging purposes so far)
+def delete_an_index(index):
+    elastic_password = get_password('../elastic_password.txt')
+
+    es = Elasticsearch(
+        [{"host": "127.0.0.1", "port": 9200, "scheme": "http"}],
+        basic_auth=["elastic", elastic_password],
+    )
+    
+    es.options(ignore_status=[400,404]).indices.delete(index=index)
