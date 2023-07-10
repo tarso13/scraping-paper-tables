@@ -44,10 +44,7 @@ def upload_new_index(parent_index, actions):
     )
 
     es.bulk(index=parent_index, operations=actions) 
-    
-    result = es.count(index=parent_index)   
-    print('Documents that belong to this index: ' + str(result.body['count']))  
-    
+        
 # Read elastic password from file so as to keep it private  
 # Create a connection to Elasticsearch
 # Delete index given (for debugging purposes so far)
