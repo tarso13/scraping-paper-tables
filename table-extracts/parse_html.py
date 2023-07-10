@@ -41,6 +41,8 @@ def replace_sub_tags(soup):
         return
     for sub_tag in sub_tags:
         sub_text = sub_tag.get_text()
+        if sub_tag.contents[0].string == None:
+            sub_tag.contents[0].string = ''
         sub_tag.contents[0].string.replace_with(f'_{sub_text}')
          
     return soup
@@ -352,6 +354,8 @@ def extract_tables(directory_name):
         parent_index_id = 0
         footnotes = {}
         metadata = {}
+        table_info = {}
+        
         if 'A&A' in entry:
             parent_index = 'a&a'
             parent_index_id = 1
