@@ -100,11 +100,10 @@ def table_info_to_json_data(metadata, table_info, json_data):
 # and then converted into json files
 def extract_table_data(table, title, footnotes, metadata, table_info, table_number):
     json_data = {}
-    
     current_table_info = {}
     if 'A&A' in title:
         current_table_info = table_info
-        
+    
     if 'IOPscience' in title:
         current_table_info['context'] = table_info['context'][table_number]
         current_table_info['notes'] = table_info['notes'][table_number]
@@ -208,6 +207,8 @@ def extract_tables(directory_name):
         metadata = {}
         table_info = {}
         
+        if 'Captcha' in entry:
+            continue
         
         if 'A&A' in entry:
             parent_index = 'a&a'
@@ -223,7 +224,7 @@ def extract_tables(directory_name):
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
             
-        index_parent(parent_index, parent_index_id)
+        # index_parent(parent_index, parent_index_id)
 
         for table in tables:
             doc_index_id = 0
@@ -235,7 +236,10 @@ def extract_tables(directory_name):
             
             if 'A&A' in title:
                 doc_index_id = os.listdir(directory_name).index(entry) + 1
-            
+            # print('Title: ' + str(title))
+            # print('Metadata: ' + str(metadata))
+            # print('Table info: ' + str(table_info))
+            # print('Foot notes: ' + str(footnotes))
             json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
-            append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
-        upload_new_index(parent_index, actions)
+            # append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
+        # upload_new_index(parent_index, actions)

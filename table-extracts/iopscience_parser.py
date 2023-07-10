@@ -11,12 +11,11 @@ def search_and_add_iopscience_footnote_to_obj(footnotes, data, json_obj):
                 note = footnotes[index]
                 note[key] = note[key].replace('Note. ', '')
                 position = note[key].find(key)
-                json_obj['note'] = note[key][position + 1:len(note[key])]
+                json_obj['note'] = note[key][position + 1 : len(note[key])]
                 footnotes.remove(footnote)
 
 # Search for footnotes in iopscience journal
 def search_iopscience_footnotes(soup_content, table_info):
-  
     small_tags = soup_content.find_all('small')
     if small_tags == None:
         return
@@ -48,8 +47,10 @@ def search_iopscience_table_notes(soup_content):
             continue
         strong_tag = small_tag.find('strong')
         if strong_tag == None:
+            notes.append('')
             continue 
         notes.append(small_tag.get_text().replace('\n', ''))
+
     return notes
 
 # Search for table contexts in iopscience journal
