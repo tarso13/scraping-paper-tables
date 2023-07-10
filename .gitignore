@@ -1,3 +1,6 @@
+table_extracts/publications
+table_extracts/publications_aanda
+table_extracts/publications_iopscience
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

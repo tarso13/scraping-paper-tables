@@ -371,7 +371,7 @@ def extract_tables(directory_name):
             footnotes =  search_iopscience_footnotes(entry_content, table_info)
             metadata = extract_journal_metadata(entry_content)
             
-        # index_parent(parent_index, parent_index_id)
+        index_parent(parent_index, parent_index_id)
 
         for table in tables:
             title = entry.replace('.html', '')
@@ -380,5 +380,7 @@ def extract_tables(directory_name):
                 title += f'_T{str(index + 1)}'
             json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
             doc_index_id = os.listdir(directory_name).index(entry)
-            # append_to_elastic_index(actions, parent_index, doc_index_id, metadata['title'], json_data)
-        # upload_new_index(parent_index, actions)
+            print('Appending ' + str(actions) + str(parent_index) + str(doc_index_id) + str(metadata['title']) + str(json_data))
+            append_to_elastic_index(actions, parent_index, doc_index_id, metadata['title'], json_data)
+        print('Uploading ' + str(parent_index) + str(actions))
+        upload_new_index(parent_index, actions)
