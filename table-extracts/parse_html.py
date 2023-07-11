@@ -39,7 +39,7 @@ def replace_sub_tags(soup_content):
          
     return soup_content
 
-# Extract all tables from html file provided in html form and extra footnotes for aanda journals
+# Extract all tables from html file provided in html form and extra footnotes for journals
 # Also replace sup and sub tags representing actual values 
 def extract_html_tables(soup_content):
     updated_soup = replace_sup_tags(soup_content)
@@ -78,13 +78,15 @@ def extract_journal_metadata(soup_content):
 def convert_to_json_array(list, json_data, key_prefix, footnotes, journal):
     json_objects = []
     counter = 1
+    if footnotes == None:
+        return
     for entry in list:
         json_obj = {}
         json_obj[counter] = {'content' : entry}
-        if journal == 'A&A' and footnotes:
+        if journal == 'A&A':
             search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj[counter])
-        if journal == 'IOPscience' and footnotes:
-            search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj[counter])
+        if journal == 'IOPscience':
+            search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj[counter], key_prefix)
         json_objects.append(json_obj)
         counter += 1
     json_data[key_prefix] = json_objects
@@ -117,14 +119,13 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
     extra_headers = []
     
     counter = 0
-    key_prefix = f'headers'
     for tr in table.find_all("tr"):
         counter += 1
         for th in tr.find_all("th"):
             if counter > 1:
                 extra_headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
                 continue
-            headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
+            headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', '').replace('  ',''))
 
     if len(headers) == 0:
         headers = list(td.get_text() for td in table.find("tr").find_all("td"))
@@ -144,14 +145,18 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
     for row in table.find_all("tr")[1:]:
         key_prefix = f'row{str(table.find_all("tr").index(row))}'
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
-            '\n', EMPTY) for td in row.find_all("td"))
+            '\n', EMPTY).replace('  ','') for td in row.find_all("td"))
         print(data_found)
+        domain = ''
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
                 footnotes, valid_footnotes, data_found)
-        
+            domain = 'A&A'
+        if 'IOPscience' in title:
+            valid_footnotes = footnotes
+            domain = 'IOPscience'
         convert_to_json_array(data_found, json_data,
-                           key_prefix, valid_footnotes, 'A&A')
+                           key_prefix, valid_footnotes, domain)
       
             
     write_to_json_file('json_results', f'{title}', json_data)
@@ -203,7 +208,7 @@ def extract_tables(directory_name):
         
         parent_index = ''
         parent_index_id = 0
-        footnotes = {}
+        footnotes = None
         metadata = {}
         table_info = {}
         
@@ -224,7 +229,7 @@ def extract_tables(directory_name):
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
             
-        # index_parent(parent_index, parent_index_id)
+        index_parent(parent_index, parent_index_id)
 
         for table in tables:
             doc_index_id = 0
@@ -236,10 +241,7 @@ def extract_tables(directory_name):
             
             if 'A&A' in title:
                 doc_index_id = os.listdir(directory_name).index(entry) + 1
-            # print('Title: ' + str(title))
-            # print('Metadata: ' + str(metadata))
-            # print('Table info: ' + str(table_info))
-            # print('Foot notes: ' + str(footnotes))
+
             json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
-            # append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
-        # upload_new_index(parent_index, actions)
+            append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
+        upload_new_index(parent_index, actions)
