@@ -49,6 +49,9 @@ def download_html_locally(url, directory_name, suffix):
         _, content = http.request(url)
         new_title = setup_title(fetch_title(content))
         
+        if 'iopscience' in directory_name and 'IOPscience' not in new_title:
+            new_title = f'{new_title}_IOPscience'
+        
         local_file = ''
         if suffix == '':
             local_file = f'{new_title}.html'

@@ -1,14 +1,14 @@
 import re
 
+# Value used to replace undesired word occurences in datasets
+EMPTY = '' 
+
 # Find iopscience footnotes using regex 
 # They are declared using '^', an empty space ' ' and a letter
 def find_iopscience_footnotes(string):
     pattern = r'\^ [a-zA-Z]'
     matches = re.findall(pattern, string)
     return matches
-
-# Value used to replace undesired word occurences in datasets
-EMPTY = ''
 
 # Search for footnote in IOPscience list of data and if found, add it to the json object the entry belongs to
 def search_and_add_iopscience_footnote_to_obj(footnotes, data, json_obj, key_prefix):

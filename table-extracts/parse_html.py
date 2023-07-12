@@ -73,20 +73,22 @@ def extract_journal_metadata(soup_content):
     metadata = search_metadata(soup_content)
     return metadata
 
- 
+# Convert and add footnote to json object depending on journal
+def footnote_to_json_object(journal, footnotes, entry, json_obj, key_prefix):
+    if journal == 'A&A':
+        search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj)
+    if journal == 'IOPscience':
+        search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj, key_prefix)
+        
 # Convert list of data extracted from table to json array
 def convert_to_json_array(list, json_data, key_prefix, footnotes, journal):
     json_objects = []
     counter = 1
-    if footnotes == None:
-        return
     for entry in list:
         json_obj = {}
         json_obj[counter] = {'content' : entry}
-        if journal == 'A&A':
-            search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj[counter])
-        if journal == 'IOPscience':
-            search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj[counter], key_prefix)
+        if footnotes:
+            footnote_to_json_object(journal, footnotes, entry, json_obj[counter], key_prefix)
         json_objects.append(json_obj)
         counter += 1
     json_data[key_prefix] = json_objects
