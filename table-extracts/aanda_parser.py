@@ -59,7 +59,7 @@ def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
 def search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj):
     for footnote in footnotes:
         if footnote in entry:
-            json_obj['content'] = json_obj['content'].replace(f'^{str(footnote)}', '')
+            json_obj['content'] = json_obj['content'].replace(f'{str(footnote)}', '')
             json_obj['note'] = footnotes[footnote]
 
 # Search for metadata in initial aanda
