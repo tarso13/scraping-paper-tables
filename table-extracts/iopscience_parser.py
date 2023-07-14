@@ -87,10 +87,10 @@ def search_iopscience_table_notes(soup_content):
 
     return notes
 
-# Search for table contexts in iopscience journal
-def search_iopscience_table_contexts(soup_content):
+# Search for table captions in iopscience journal
+def search_iopscience_table_captions(soup_content):
     p_tags = soup_content.find_all('p')
-    contexts = []
+    captions = []
     for p_tag in p_tags:
         b_tag = p_tag.find('b')
         if b_tag == None:
@@ -98,12 +98,12 @@ def search_iopscience_table_contexts(soup_content):
         if 'Table' not in b_tag.get_text():
             continue
         p_text = p_tag.get_text().replace(b_tag.get_text(), '').replace('\xa0', EMPTY)
-        contexts.append(p_text)
-    return contexts
+        captions.append(p_text)
+    return captions
 
-# Search for table info in iopscience journal, including notes and context
+# Search for table info in iopscience journal, including notes and caption
 def search_iopscience_table_info(soup_content):
     table_info = {}
     table_info['notes'] = search_iopscience_table_notes(soup_content)
-    table_info['context'] = search_iopscience_table_contexts(soup_content)
+    table_info['caption'] = search_iopscience_table_captions(soup_content)
     return table_info

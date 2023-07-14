@@ -81,14 +81,19 @@ def footnote_to_json_object(journal, footnotes, entry, json_obj, key_prefix):
         search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj, key_prefix)
         
 # Convert list of data extracted from table to json array
-def convert_to_json_array(list, json_data, key_prefix, footnotes, journal):
+def convert_to_json_array(list, json_data, key_prefix, footnotes, journal, header):
+    if len(list) == 0:
+        return
     json_objects = []
     counter = 1
     for entry in list:
         json_obj = {}
-        json_obj[counter] = {'content' : entry}
+        index = f'col{str(counter)}'    
+        json_obj[index] = {'content' : entry}
+        if header == True:
+            json_obj[index]['header'] = 'true'
         if footnotes:
-            footnote_to_json_object(journal, footnotes, entry, json_obj[counter], key_prefix)
+            footnote_to_json_object(journal, footnotes, entry, json_obj[index], key_prefix)
         json_objects.append(json_obj)
         counter += 1
     json_data[key_prefix] = json_objects
@@ -109,46 +114,48 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
         current_table_info = table_info
     
     if 'IOPscience' in title:
-        current_table_info['context'] = table_info['context'][table_number]
+        current_table_info['caption'] = table_info['caption'][table_number]
         current_table_info['notes'] = table_info['notes'][table_number]
         if current_table_info['notes'] == '':
             current_table_info.pop('notes')
         
     table_info_to_json_data(metadata, current_table_info, json_data)
 
-    key_prefix = f'headers'
+    key_prefix = f'row'
     headers = []
     extra_headers = []
     
     counter = 0
     for tr in table.find_all("tr"):
         counter += 1
-        for th in tr.find_all("th"):
+        for th in tr.find_all("th"):   
             if counter > 1:
                 extra_headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
                 continue
             headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', '').replace('  ',''))
-
-    if len(headers) == 0:
-        headers = list(td.get_text() for td in table.find("tr").find_all("td"))
-
-    print(headers)
-    print('Extra headers: ' + str(extra_headers))
+    
+    key_prefix = f'row1'
     
     if 'IOPscience' in title:
-        convert_to_json_array(headers, json_data, key_prefix, footnotes, 'IOPscience')
+        print(key_prefix)
+        convert_to_json_array(headers, json_data, key_prefix, footnotes, 'IOPscience', True)
         if len(extra_headers) != 0:
-            key_prefix = f'extra_{key_prefix}'
-            convert_to_json_array(extra_headers, json_data, key_prefix, None, 'IOPscience')
+            key_prefix = f'row2'
+            print(key_prefix)
+            convert_to_json_array(extra_headers, json_data, key_prefix, None, 'IOPscience', True)
     else:
-        convert_to_json_array(headers, json_data, key_prefix, None, 'A&A')
+        key_prefix = f'row1'
+        print(key_prefix)
+        convert_to_json_array(headers, json_data, key_prefix, None, 'A&A', True)
         
     valid_footnotes = {}
+    header_count = key_prefix[len(key_prefix) - 1]
     for row in table.find_all("tr")[1:]:
-        key_prefix = f'row{str(table.find_all("tr").index(row))}'
+        index = int(header_count) + table.find_all("tr").index(row) 
+        key_prefix = f'row{str(index)}'
+        print(key_prefix)
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
             '\n', EMPTY).replace('  ','') for td in row.find_all("td"))
-        print(data_found)
         domain = ''
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
@@ -158,9 +165,9 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
             valid_footnotes = footnotes
             domain = 'IOPscience'
         convert_to_json_array(data_found, json_data,
-                           key_prefix, valid_footnotes, domain)
+                           key_prefix, valid_footnotes, domain, False)
       
-            
+          
     write_to_json_file('json_results', f'{title}', json_data)
     return json_data
 
@@ -218,19 +225,17 @@ def extract_tables(directory_name):
             continue
         
         if 'A&A' in entry:
-            parent_index = 'a&a'
-            parent_index_id = 0
             footnotes =  search_aanda_footnotes(soup_content)
             table_info = search_aanda_table_info(soup_content)
             metadata = search_aanda_journal_metadata(entry)
          
         if 'IOPscience' in entry:
-            parent_index = 'iopscience'
-            parent_index_id = 1
             table_info = search_iopscience_table_info(soup_content)
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
-            
+         
+        parent_index = 'astrophysics'
+        parent_index_id = 1   
         index_parent(parent_index, parent_index_id)
 
         for table in tables:
@@ -246,4 +251,5 @@ def extract_tables(directory_name):
 
             json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
             append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
+        
         upload_new_index(parent_index, actions)

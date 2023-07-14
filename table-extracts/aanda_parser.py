@@ -29,14 +29,14 @@ def search_aanda_table_info(soup_content):
     description_section = soup_content.find('div', id='annex')
 
     if notes_section == None:
-        table_info['context'] = description_section.find(
+        table_info['caption'] = description_section.find(
             'p').get_text(strip=True)
         return table_info
 
     if description_section == None:
         return None
 
-    table_info['context'] = description_section.find(
+    table_info['caption'] = description_section.find(
         'p').get_text(strip=True)
     table_info['notes'] = notes_section.find(
         'p').get_text(strip=True)
