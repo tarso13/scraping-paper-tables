@@ -137,15 +137,12 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
     key_prefix = f'row1'
     
     if 'IOPscience' in title:
-        print(key_prefix)
         convert_to_json_array(headers, json_data, key_prefix, footnotes, 'IOPscience', True)
         if len(extra_headers) != 0:
             key_prefix = f'row2'
-            print(key_prefix)
             convert_to_json_array(extra_headers, json_data, key_prefix, None, 'IOPscience', True)
     else:
         key_prefix = f'row1'
-        print(key_prefix)
         convert_to_json_array(headers, json_data, key_prefix, None, 'A&A', True)
         
     valid_footnotes = {}
@@ -153,7 +150,6 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
     for row in table.find_all("tr")[1:]:
         index = int(header_count) + table.find_all("tr").index(row) 
         key_prefix = f'row{str(index)}'
-        print(key_prefix)
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
             '\n', EMPTY).replace('  ','') for td in row.find_all("td"))
         domain = ''
@@ -228,7 +224,7 @@ def extract_tables(directory_name):
             footnotes =  search_aanda_footnotes(soup_content)
             table_info = search_aanda_table_info(soup_content)
             metadata = search_aanda_journal_metadata(entry)
-         
+
         if 'IOPscience' in entry:
             table_info = search_iopscience_table_info(soup_content)
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
