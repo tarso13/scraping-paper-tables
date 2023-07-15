@@ -1,5 +1,4 @@
-from parse_html import * 
-
+from download_html import *
 # Links to extract data from 
 urls = [
     'https://www.aanda.org/articles/aa/full_html/2018/08/aa32766-18/aa32766-18.html',
@@ -13,11 +12,12 @@ urls = [
 
 # Main function to download initial urls and extract data
 def main():
+    download_extra_files = False
     print('Start downloading process...')
-    download_all_html_files('publications', urls)
+    download_all_html_files('publications', urls, download_extra_files)
     print('Start extracting process...')
-    extract_tables('publications_aanda')
-    extract_tables('publications_aanda/publications_aanda_tables')
-    extract_tables('publications_iopscience')
+    extract_downloaded_tables('publications_aanda')
+    extract_downloaded_tables('publications_aanda/publications_aanda_tables')
+    extract_downloaded_tables('publications_iopscience')
     
 main()
