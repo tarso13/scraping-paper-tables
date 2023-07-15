@@ -1,4 +1,5 @@
-from download_html import *
+from bs4 import BeautifulSoup
+import os
 import json
 from upload_elastic_index import *
 from aanda_parser import *
@@ -135,10 +136,11 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
             headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', '').replace('  ',''))
     
     key_prefix = f'row1'
-    
+    print(headers)
     if 'IOPscience' in title:
         convert_to_json_array(headers, json_data, key_prefix, footnotes, 'IOPscience', True)
         if len(extra_headers) != 0:
+            print(extra_headers)
             key_prefix = f'row2'
             convert_to_json_array(extra_headers, json_data, key_prefix, None, 'IOPscience', True)
     else:
@@ -153,6 +155,7 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
             '\n', EMPTY).replace('  ','') for td in row.find_all("td"))
         domain = ''
+        print(data_found)
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
                 footnotes, valid_footnotes, data_found)
@@ -171,7 +174,8 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
 # Title is the title of the json file
 # Directory name is the directory the json file will be stored
 def write_to_json_file(directory_name, title, json_data):
-    create_directory(directory_name)
+    if not os.path.isdir(directory_name):
+        os.mkdir(directory_name)
     path_to_json = os.path.join(directory_name, f'{title}.json')
     file = open(path_to_json, 'w', encoding='utf-8')
     file.write(json.dumps(json_data, indent = 1))
@@ -181,9 +185,7 @@ def append_to_elastic_index(actions, parent_index, doc_index_id, title, content)
     add_document_to_actions(actions, parent_index, doc_index_id, title, content)
     
 # Extract all table data found in html files in given directory and print them
-# If extra links for tables are included, these links are appended in links_to_extract
-# and are handled after the simple ones
-def extract_tables(directory_name):
+def extract_downloaded_tables(directory_name):
     if os.path.exists(directory_name) == False:
         return
     parent_index = ''
@@ -249,3 +251,4 @@ def extract_tables(directory_name):
             append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
         
         upload_new_index(parent_index, actions)
+        
