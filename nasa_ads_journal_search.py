@@ -94,22 +94,25 @@ def extract_urls_from_bibcodes(bibcodes, format):
         urls.append(url)
     return urls
 
-# A simple example of building an ads query to get url for an aanda journal published 
-# between 2020 and 2023
+# A simple example of seraching for an aanda journal 
+# a) by keyword
+# b) by journal type
+# c) by journal in specific period of time
+# using the nasa/ads api
 def main():
     number_of_results = 1
     
-    # print('Searching by keyword...')
-    # keyword_results = search_ads_by_keyword('SNR', 'bibcode', number_of_results)
-    # print(keyword_results)
+    print('Searching by keyword...')
+    keyword_results = search_ads_by_keyword('SNR', 'bibcode', number_of_results)
+    print(keyword_results)
     
     print('Searching by journal...')
-    journal_results = search_ads_by_journal('A&A', 'bibcode', number_of_results)
+    journal_results = search_ads_by_journal('AJ', 'bibcode', number_of_results)
     print(journal_results)
     
-    # print('Searching by journal in specific period of time...')
-    # journal_time_results = search_ads_journal_by_period_of_time('A&A', 2020, 2023, 'bibcode', number_of_results)
-    # print(journal_time_results)
+    print('Searching by journal in specific period of time...')
+    journal_time_results = search_ads_journal_by_period_of_time('A&A', 2020, 2023, 'bibcode', number_of_results)
+    print(journal_time_results)
     
     
 main()
