@@ -1,4 +1,6 @@
 import re
+import requests
+import os
 
 # Value used to replace undesired word occurences in datasets
 EMPTY = '' 
@@ -107,3 +109,30 @@ def search_iopscience_table_info(soup_content):
     table_info['notes'] = search_iopscience_table_notes(soup_content)
     table_info['caption'] = search_iopscience_table_captions(soup_content)
     return table_info
+
+# Write mrt file containing full versions for tables of iopscience journals
+def write_mrt_file(directory_name, title, content):
+    if not os.path.isdir(directory_name):
+        os.mkdir(directory_name)
+    path_to_mrt = os.path.join(directory_name, f'{title}.txt')
+    file = open(path_to_mrt, 'wb')
+    file.write(content)
+    
+# Extract mrt files containing full versions for tables of iopscience journals from their html content
+# and write the data in bytes in local mrt files
+def extract_iopscience_mrt_tables(soup_content, directory_name):
+    web_refs = soup_content.find_all("a", {"class": "webref"})
+    for web_ref in web_refs:
+        if 'machine-readable' in web_ref.get_text():
+            href = web_ref['href'] 
+            mrt_html = requests.get(href)
+            title = mrt_title(href)
+            content = mrt_html.content
+            write_mrt_file(directory_name, title, content)
+            
+# Extract title from href pointing to the mrt file
+def mrt_title(href):
+    revision_index = href.find('revision1/')
+    txt_index = href.find('.txt')
+    title = href[revision_index + len('revision1/') : txt_index]
+    return title
