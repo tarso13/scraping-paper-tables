@@ -121,13 +121,13 @@ def aanda_download_extra_files(content, directory_name, downloaded_files, downlo
         if html_local_path in downloaded_files:
             url_suffixes.pop(full_path)
         
-    download_extra_html_files(directory_name, url_suffixes)
+    download_extra_html_files(directory_name, url_suffixes, download_extra_files)
             
 # Download extra html files from urls and save them locally concurrently
 # Specify aanda case and save those files in different directory
-def download_extra_html_files(directory_name, url_suffixes):
+def download_extra_html_files(directory_name, url_suffixes, download_extra_files):
     for url in url_suffixes:
-        download_html_locally(url, directory_name, str(url_suffixes[url]))
+        download_html_locally(url, directory_name, str(url_suffixes[url]), download_extra_files)
         
 # Extract all table data found in html content without downloading the extra files and print them
 def extract_undownloaded_tables(content, title, entry):

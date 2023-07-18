@@ -1,6 +1,7 @@
 import re
 import requests
 import os
+import astropy.io.ascii as ascii
 
 # Value used to replace undesired word occurences in datasets
 EMPTY = '' 
@@ -50,7 +51,7 @@ def identify_iopscience_footnotes(small_tag, footnotes, table_info):
             tmp = footnote_value.replace(res, '')
             next_index = tmp[index:len(tmp)].find(result[result.index(res) + 1])
             footnotes.append({res: footnote_value[index + 3: next_index]})
-        remove_footnote_from_notes(res, table_info)
+        # remove_footnote_from_notes(res, table_info)
     return footnotes
 
 # Search for footnotes in iopscience journal
@@ -129,7 +130,11 @@ def extract_iopscience_mrt_tables(soup_content, directory_name):
             title = mrt_title(href)
             content = mrt_html.content
             write_mrt_file(directory_name, title, content)
-            
+            path_to_mrt = os.path.join(directory_name, f'{title}.txt')
+            print(f'Data for : {path_to_mrt}')
+            data = ascii.read(path_to_mrt, format='mrt')
+            print(data)
+                  
 # Extract title from href pointing to the mrt file
 def mrt_title(href):
     revision_index = href.find('revision1/')

@@ -231,7 +231,7 @@ def extract_downloaded_tables(directory_name):
             table_info = search_iopscience_table_info(soup_content)
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
-            extract_iopscience_mrt_tables(soup_content, 'mrts')
+            extract_iopscience_mrt_tables(soup_content, 'iopscience_mrts')
          
         parent_index = 'astrophysics'
         parent_index_id = 1   
