@@ -14,7 +14,7 @@ token=get_password('nasa_ads_token.txt')
 # Return value is what the user wants to retrive, e.g. title, bibcode, etc.
 # whilst results is the number of results (up to 2000)
 def search_ads_by_keyword(keyword,  return_value, results):
-    query = {"q": "abs:" + keyword, "fl": return_value, "rows": results}
+    query = {"q": f'abs:{keyword}', "fl": return_value, "rows": results}
     encoded_query = urlencode(query)
     query_results = get_ads_query_results(encoded_query)
     bibcodes = extract_bibcode_from_results(query_results, results)
@@ -27,11 +27,10 @@ def search_ads_by_keyword(keyword,  return_value, results):
 # Return value is what the user wants to retrive, e.g. title, bibcode, etc.
 # whilst results is the number of results (up to 2000)
 def search_ads_by_journal(journal_abbr, return_value, results):
-    query = {"q": "bibstem:" + journal_abbr, "fl": return_value, "rows": results}
+    query = {"q": f'bibstem:{journal_abbr}', "fl": return_value, "rows": results}
     encoded_query = urlencode(query)
     query_results = get_ads_query_results(encoded_query)
     bibcodes = extract_bibcode_from_results(query_results, results)
-    print(bibcodes)
     urls = extract_urls_from_bibcodes(bibcodes, format)
     return urls
 
@@ -42,7 +41,7 @@ def search_ads_by_journal(journal_abbr, return_value, results):
 # whilst results is the number of results (up to 2000)
 def search_ads_journal_by_period_of_time(journal_abbr, start_year, end_year, return_value, results):
     period_of_time = f'year:[{str(start_year)} TO {str(end_year)}]'
-    query = {"q": "bibstem:"+ journal_abbr, "fq": period_of_time, "fl": return_value, "rows": results}
+    query = {"q": f'bibstem:{journal_abbr}', "fq": period_of_time, "fl": return_value, "rows": results}
     encoded_query = urlencode(query)
     query_results = get_ads_query_results(encoded_query)
     bibcodes = extract_bibcode_from_results(query_results, results)
@@ -94,20 +93,20 @@ def extract_urls_from_bibcodes(bibcodes, format):
         urls.append(url)
     return urls
 
-# A simple example of seraching for an aanda journal 
+# A simple example of seraching for 15 journals
 # a) by keyword
 # b) by journal type
 # c) by journal in specific period of time
 # using the nasa/ads api
 def main():
-    number_of_results = 1
+    number_of_results = 15
     
     print('Searching by keyword...')
     keyword_results = search_ads_by_keyword('SNR', 'bibcode', number_of_results)
     print(keyword_results)
     
     print('Searching by journal...')
-    journal_results = search_ads_by_journal('AJ', 'bibcode', number_of_results)
+    journal_results = search_ads_by_journal('A&A', 'bibcode', number_of_results)
     print(journal_results)
     
     print('Searching by journal in specific period of time...')
