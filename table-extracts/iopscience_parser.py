@@ -2,6 +2,7 @@ import re
 import requests
 import os
 import astropy.io.ascii as ascii
+import pandas
 
 # Value used to replace undesired word occurences in datasets
 EMPTY = '' 
@@ -118,22 +119,53 @@ def write_mrt_file(directory_name, title, content):
     path_to_mrt = os.path.join(directory_name, f'{title}.txt')
     file = open(path_to_mrt, 'wb')
     file.write(content)
+
+# Convert mrt table data to json format
+def convert_mrt_to_json(mrt_table):
+    json_data = {}
+    keys = []
+    key_indexes = {}
+    key_count = 0
+    for key in mrt_table:
+        key_count += 1
+        keys.append({'content': key, 'header': 'true'})
+        key_indexes[key] = key_count
+        
+    for key in keys:
+        key_index = keys.index(key)
+        keys[key_index] = {f'col{key_index + 1}': keys[key_index]}
+    json_data['row1'] = keys
+
+    data = []
+    for key in mrt_table:
+        values = [mrt_table[key]]
+        col_index = key_indexes[key]  
+        for value in values:
+            value_index = values.index(value) 
+            data.append({f'col{str(col_index)}':{'content' : values[value_index][value_index]}})
+    json_data[f'row{value_index + 2}'] = data # + 1 for header row, + 1 for readability
+    print(json_data)
     
 # Extract mrt files containing full versions for tables of iopscience journals from their html content
 # and write the data in bytes in local mrt files
 def extract_iopscience_mrt_tables(soup_content, directory_name):
     web_refs = soup_content.find_all("a", {"class": "webref"})
+
     for web_ref in web_refs:
         if 'machine-readable' in web_ref.get_text():
             href = web_ref['href'] 
             mrt_html = requests.get(href)
             title = mrt_title(href)
             content = mrt_html.content
-            write_mrt_file(directory_name, title, content)
+            # write_mrt_file(directory_name, title, content)
+            title = 'ajacdd6ft1_mrt'
             path_to_mrt = os.path.join(directory_name, f'{title}.txt')
             print(f'Data for : {path_to_mrt}')
             data = ascii.read(path_to_mrt, format='mrt')
-            print(data)
+            df = data.to_pandas()
+            table = df.to_dict()
+            json_data = convert_mrt_to_json(table)
+            
                   
 # Extract title from href pointing to the mrt file
 def mrt_title(href):

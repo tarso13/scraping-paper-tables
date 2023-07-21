@@ -104,11 +104,16 @@ def table_info_to_json_data(metadata, table_info, json_data):
     json_data['metadata'] = metadata
     json_data['table info'] = table_info
 
+def include_extra_metadata_json_data(extra_metadata, metadata, json_data):
+    for key in extra_metadata:
+        metadata[key] = extra_metadata[key]
+    json_data['metadata'] = metadata
+
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-def extract_table_data(table, title, footnotes, metadata, table_info, table_number):
+def extract_table_data(table, title, footnotes, metadata, extra_metadata,table_info, table_number):
     json_data = {}
     current_table_info = {}
     if 'A&A' in title:
@@ -119,9 +124,9 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
         current_table_info['notes'] = table_info['notes'][table_number]
         if current_table_info['notes'] == '':
             current_table_info.pop('notes')
-        
-    table_info_to_json_data(metadata, current_table_info, json_data)
-
+    
+    metadata['title'] = title.replace('_',  ' ')
+ 
     key_prefix = f'row'
     headers = []
     extra_headers = []
@@ -136,26 +141,44 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
             headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', '').replace('  ',''))
     
     key_prefix = f'row1'
-    print(headers)
+    # print(headers)
+    table_info_to_json_data(metadata, current_table_info, json_data)
+    
+    extra_metadata['headers'] = headers
+    extra_metadata['rows'] = 0
+    extra_metadata['cols'] = len(headers)
+    
     if 'IOPscience' in title:
         convert_to_json_array(headers, json_data, key_prefix, footnotes, 'IOPscience', True)
         if len(extra_headers) != 0:
-            print(extra_headers)
+            # print(extra_headers)
             key_prefix = f'row2'
             convert_to_json_array(extra_headers, json_data, key_prefix, None, 'IOPscience', True)
     else:
         key_prefix = f'row1'
         convert_to_json_array(headers, json_data, key_prefix, None, 'A&A', True)
-        
+    
     valid_footnotes = {}
-    header_count = key_prefix[len(key_prefix) - 1]
-    for row in table.find_all("tr")[1:]:
-        index = int(header_count) + table.find_all("tr").index(row) 
+    header_count = 0
+    if headers:
+        header_count = key_prefix[len(key_prefix) - 1]
+        
+    table_rows = table.find_all("tr")
+    for row in table_rows[1:]:
+        row_index = table_rows.index(row)
+        index = int(header_count) + row_index 
         key_prefix = f'row{str(index)}'
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
             '\n', EMPTY).replace('  ','') for td in row.find_all("td"))
+      
+        if row_index == 1:
+            extra_metadata['rows'] = len(table_rows)
+            if not len(headers):    
+                extra_metadata['cols'] = len(data_found)
+            include_extra_metadata_json_data(extra_metadata, metadata, json_data)
+        
         domain = ''
-        print(data_found)
+        # print(data_found)
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
                 footnotes, valid_footnotes, data_found)
@@ -166,7 +189,7 @@ def extract_table_data(table, title, footnotes, metadata, table_info, table_numb
         convert_to_json_array(data_found, json_data,
                            key_prefix, valid_footnotes, domain, False)
       
-          
+ 
     write_to_json_file('json_results', f'{title}', json_data)
     return json_data
 
@@ -217,6 +240,7 @@ def extract_downloaded_tables(directory_name):
         parent_index_id = 0
         footnotes = None
         metadata = {}
+        extra_metadata = {}
         table_info = {}
         
         if 'Captcha' in entry:
@@ -248,7 +272,7 @@ def extract_downloaded_tables(directory_name):
             if 'A&A' in title:
                 doc_index_id = os.listdir(directory_name).index(entry) + 1
 
-            json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
+            json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index)
             append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
         
         upload_new_index(parent_index, actions)

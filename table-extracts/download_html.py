@@ -54,7 +54,7 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
             new_title = f'{new_title}_IOPscience'
         
         local_file = f'{new_title}{suffix}.html'
-                    
+                
         if local_file in downloaded_files:
             print(f'Cancel download of {url} [Already exists]')
             return
