@@ -136,15 +136,18 @@ def convert_mrt_to_json(mrt_table):
         keys[key_index] = {f'col{key_index + 1}': keys[key_index]}
     json_data['row1'] = keys
 
-    data = []
+    
     for key in mrt_table:
-        values = [mrt_table[key]]
+        counter = 1
+        values = mrt_table[key] 
         col_index = key_indexes[key]  
         for value in values:
-            value_index = values.index(value) 
-            data.append({f'col{str(col_index)}':{'content' : values[value_index][value_index]}})
-    json_data[f'row{value_index + 2}'] = data # + 1 for header row, + 1 for readability
-    print(json_data)
+            if f'row{str(counter + 1)}' not in json_data:
+                json_data[f'row{str(counter + 1)}'] = []
+            json_data[f'row{str(counter + 1)}'].append({f'col{str(col_index)}':{'content' : values[value]}})
+            counter += 1
+        
+    return json_data
     
 # Extract mrt files containing full versions for tables of iopscience journals from their html content
 # and write the data in bytes in local mrt files
@@ -157,14 +160,15 @@ def extract_iopscience_mrt_tables(soup_content, directory_name):
             mrt_html = requests.get(href)
             title = mrt_title(href)
             content = mrt_html.content
-            # write_mrt_file(directory_name, title, content)
+            write_mrt_file(directory_name, title, content)
             title = 'ajacdd6ft1_mrt'
             path_to_mrt = os.path.join(directory_name, f'{title}.txt')
             print(f'Data for : {path_to_mrt}')
-            data = ascii.read(path_to_mrt, format='mrt')
+            data = ascii.read(path_to_mrt)
             df = data.to_pandas()
             table = df.to_dict()
             json_data = convert_mrt_to_json(table)
+            print(json_data)
             
                   
 # Extract title from href pointing to the mrt file
