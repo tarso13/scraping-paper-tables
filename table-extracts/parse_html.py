@@ -5,6 +5,8 @@ from upload_elastic_index import *
 from aanda_parser import *
 from iopscience_parser import *
 
+doc_index_id = 0 
+
 # List containing the html files with tables that have been extracted
 files_extracted = []
 
@@ -236,7 +238,7 @@ def extract_downloaded_tables(directory_name):
         
         tables = extract_html_tables(soup_content)
         
-        parent_index = ''
+        parent_index = 'astrophysics'
         parent_index_id = 0
         footnotes = None
         metadata = {}
@@ -252,27 +254,34 @@ def extract_downloaded_tables(directory_name):
             metadata = search_aanda_journal_metadata(entry)
 
         if 'IOPscience' in entry:
+            mrt_indexes = {}
             table_info = search_iopscience_table_info(soup_content)
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
-            extract_iopscience_mrt_tables(soup_content, 'iopscience_mrts')
-         
-        parent_index = 'astrophysics'
+            mrt_titles, json_results = extract_iopscience_mrt_tables(soup_content, 'iopscience_mrts')
+            for result in json_results:
+                index = json_results.index(result)
+                mrt_title = mrt_titles[index]
+                write_to_json_file('json_mrts', mrt_title, result)
+                mrt_indexes[mrt_title] = result
+                
         parent_index_id = 1   
         index_parent(parent_index, parent_index_id)
 
         for table in tables:
-            doc_index_id = 0
             title = entry.replace('.html', '')
             index = tables.index(table)
             if 'IOPscience' in title:
                 title += f'_T{str(index + 1)}'
-                doc_index_id = index
-            
-            if 'A&A' in title:
-                doc_index_id = os.listdir(directory_name).index(entry) + 1
+                
+            global doc_index_id 
+            doc_index_id += 1
 
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index)
             append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
+        
+        for mrt_index in mrt_indexes:
+            doc_index_id += 1
+            append_to_elastic_index(actions, parent_index, doc_index_id, mrt_index, mrt_indexes[mrt_index])
         
         upload_new_index(parent_index, actions)

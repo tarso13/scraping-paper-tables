@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from parse_html import *
+from parse_html import extract_table_data, extract_journal_metadata, search_aanda_footnotes, search_aanda_journal_metadata,search_aanda_table_info, extract_html_tables, title_to_metadata, index_parent, append_to_elastic_index, upload_new_index, doc_index_id
 from tldextract import extract
 from urllib.parse import urlparse
 import os
@@ -134,11 +134,12 @@ def extract_undownloaded_tables(content, title, entry):
     soup_content = BeautifulSoup(content, 'html.parser')
     
     tables = extract_html_tables(soup_content)
-        
+    
     parent_index = ''
     parent_index_id = 0
     footnotes = None
     metadata = {}
+    extra_metadata = {}
     table_info = {}
     actions = []   
         
@@ -148,17 +149,13 @@ def extract_undownloaded_tables(content, title, entry):
         metadata = search_aanda_journal_metadata(entry)
 
     parent_index = 'astrophysics'
-    parent_index_id = 1   
+    parent_index_id = 0 
     index_parent(parent_index, parent_index_id)
-
-    for table in tables:
-        doc_index_id = 0
-        index = tables.index(table)
-       
-        if 'A&A' in title:
-            doc_index_id = 0
-
-        json_data = extract_table_data(table, title, footnotes, metadata, table_info, index)
-        append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
     
+    for table in tables:
+        index = tables.index(table)
+        global doc_index_id 
+        doc_index_id += 1
+        json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index)
+        append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
     upload_new_index(parent_index, actions)

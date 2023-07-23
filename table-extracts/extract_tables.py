@@ -1,4 +1,5 @@
-from download_html import *
+from download_html import download_all_html_files
+from parse_html import extract_downloaded_tables
 # Links to extract data from 
 urls = [
     'https://www.aanda.org/articles/aa/full_html/2018/08/aa32766-18/aa32766-18.html',

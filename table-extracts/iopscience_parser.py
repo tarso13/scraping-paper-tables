@@ -7,6 +7,7 @@ import pandas
 # Value used to replace undesired word occurences in datasets
 EMPTY = '' 
 
+mrt_keys = 0
 # Find iopscience footnotes using regex 
 # They are declared using '^', an empty space ' ' and a letter
 def find_iopscience_footnotes(string):
@@ -117,12 +118,19 @@ def write_mrt_file(directory_name, title, content):
     if not os.path.isdir(directory_name):
         os.mkdir(directory_name)
     path_to_mrt = os.path.join(directory_name, f'{title}.txt')
+    if os.path.exists(path_to_mrt):
+       return
     file = open(path_to_mrt, 'wb')
     file.write(content)
 
+# Convert mrt table units and header explanations to json format
+def mrt_headers_to_json(units, explanations, json_data):
+    json_data['units'] = units
+    json_data['header explanations'] = explanations
+    return json_data
+    
 # Convert mrt table data to json format
-def convert_mrt_to_json(mrt_table):
-    json_data = {}
+def mrt_table_data_to_json(mrt_table, json_data):
     keys = []
     key_indexes = {}
     key_count = 0
@@ -148,31 +156,122 @@ def convert_mrt_to_json(mrt_table):
             counter += 1
         
     return json_data
+
+# The function extract_mrt_table_title, extract_mrt_authors, extract_mrt_table_caption
+# are helper functions based on observation for the mrt files used in iopscience journals (html form)
+# Thus, they should be used the order provided due to changes made to 'table_lines' while parsing the journal metadata.
+
+def extract_mrt_table_title(table_lines):
+    title = ''
+    for line in table_lines:
+        if 'Authors:' in line:
+            break
+        title += line
+        index = table_lines.index(line)
+        table_lines[index] = ''
+    title.replace('Title:', '')
+    return title
+
+def extract_mrt_authors(table_lines):
+    authors = ''
+    for line in table_lines:
+        if 'Table:' in line:
+            break
+        authors += line
+        index = table_lines.index(line)
+        table_lines[index] = ''
+    authors.replace('Authors:','')
+    return authors
+
+def extract_mrt_table_caption(table_lines):
+    caption = ''
+    split_point = '================================================================================'
+    for line in table_lines:
+        if split_point in line:
+            break
+        caption += line
+    caption.replace('Table:','')
+    return caption
+
+# Extract mrt metadata (title, authors and caption) for mrt table
+def extract_mrt_metadata(table_lines):
+    title = extract_mrt_table_title(table_lines)  
+    authors = extract_mrt_authors(table_lines)
+    caption = extract_mrt_table_caption(table_lines)
+    return title, authors, caption
+
+# Convert mrt metadata to json
+def mrt_metadata_to_json(title, authors, caption, json_data):  
+    json_data['title'] = title
+    json_data['authors'] = authors
+    json_data['caption'] = caption
+    return json_data
+
+def extract_mrt_units_and_explanations(table_lines):
+    units = []
+    explanations = []
+    header_line = 0
+    first_data_line = 0
+    split_point = '--------------------------------------------------------------------------------'
+    for line in table_lines:
+        line_index = table_lines.index(line)
+              
+        if 'Units' in line:
+            header_line = line_index
+            first_data_line = header_line + 2
+                    
+        if header_line == 0:
+            continue
+                
+        if split_point in line and len(units) != 0:
+            break
+                
+        if line_index > header_line and line_index >= first_data_line:
+            line_list = list(line.replace('  ', ' ').split(' '))
+            units.append(line_list[5])
+            explanation = ''
+            for i in range (8, len(line_list)):
+                word = line_list[i].replace('\n', '')
+                if line_list[i] != ' ':
+                    explanation += f'{word} '
+            explanations.append(explanation)
+    
+    return units, explanations
     
 # Extract mrt files containing full versions for tables of iopscience journals from their html content
 # and write the data in bytes in local mrt files
 def extract_iopscience_mrt_tables(soup_content, directory_name):
     web_refs = soup_content.find_all("a", {"class": "webref"})
-
+    json_results = []
+    mrt_titles = []
     for web_ref in web_refs:
         if 'machine-readable' in web_ref.get_text():
             href = web_ref['href'] 
             mrt_html = requests.get(href)
-            title = mrt_title(href)
+            mrt_title = extract_mrt_title(href)
+            mrt_titles.append(mrt_title)
             content = mrt_html.content
-            write_mrt_file(directory_name, title, content)
-            title = 'ajacdd6ft1_mrt'
-            path_to_mrt = os.path.join(directory_name, f'{title}.txt')
-            print(f'Data for : {path_to_mrt}')
-            data = ascii.read(path_to_mrt)
+            write_mrt_file(directory_name, mrt_title, content)
+            path_to_mrt = os.path.join(directory_name, f'{mrt_title}.txt')
+          
+            mrt_file = open(path_to_mrt, 'r')
+            lines = mrt_file.readlines()
+            title, authors, caption = extract_mrt_metadata(lines)
+            units, explanations = extract_mrt_units_and_explanations(lines)
+            
+            data = ascii.read(path_to_mrt, format='mrt')
             df = data.to_pandas()
             table = df.to_dict()
-            json_data = convert_mrt_to_json(table)
-            print(json_data)
+            json_data = {}
+            json_data = mrt_metadata_to_json(title, authors, caption, json_data)
+            json_data = mrt_headers_to_json(units, explanations, json_data)
+            json_data = mrt_table_data_to_json(table, json_data)
+            json_results.append(json_data)
+    return mrt_titles, json_results
             
                   
 # Extract title from href pointing to the mrt file
-def mrt_title(href):
+def extract_mrt_title(href):
     revision_index = href.find('revision1/')
     txt_index = href.find('.txt')
     title = href[revision_index + len('revision1/') : txt_index]
