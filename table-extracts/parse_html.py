@@ -38,7 +38,11 @@ def replace_sub_tags(soup_content):
         return
     for sub_tag in sub_tags:
         sub_text = sub_tag.get_text()
-        sub_tag.contents[0].string.replace_with(f'_{sub_text}')
+        if sub_tag.contents[0].string == None:
+            sub_tag.contents[0].string = ''
+            sub_tag.contents[0].string.replace('', f'_{sub_text}')
+        else:
+            sub_tag.contents[0].string.replace_with(f'_{sub_text}')
          
     return soup_content
 
@@ -68,6 +72,11 @@ def search_metadata(soup_content):
                 metadata['title'] = content
             case 'citation_publication_date':
                 metadata['date'] = content
+    
+    if len(authors) == 0:
+        metadata['journal'] = 'IOPscience'
+        authors = search_iopscience_authors_old(soup_content)
+        metadata['date'] = search_iopscience_date_old(soup_content)
     metadata['author(s)'] = authors
     return metadata
 
@@ -123,9 +132,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata,table_i
     
     if 'IOPscience' in title:
         current_table_info['caption'] = table_info['caption'][table_number]
-        current_table_info['notes'] = table_info['notes'][table_number]
-        if current_table_info['notes'] == '':
-            current_table_info.pop('notes')
+        if table_info['notes']:
+            current_table_info['notes'] = table_info['notes'][table_number]
     
     metadata['title'] = title.replace('_',  ' ')
  
@@ -166,8 +174,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata,table_i
         header_count = key_prefix[len(key_prefix) - 1]
         
     table_rows = table.find_all("tr")
-    for row in table_rows[1:]:
-        row_index = table_rows.index(row)
+    for row in table_rows[0:]:
+        row_index = table_rows.index(row) + 1
         index = int(header_count) + row_index 
         key_prefix = f'row{str(index)}'
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(

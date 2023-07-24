@@ -106,11 +106,37 @@ def search_iopscience_table_captions(soup_content):
         captions.append(p_text)
     return captions
 
+def search_iopscience_table_notes_old(soup_content):     
+    pass
+   
+def search_iopscience_footnotes_old(soup_content):
+    pass
+
+def search_iopscience_date_old(soup_content):
+    h4_tag = soup_content.find('h4')
+    date = h4_tag.get_text()
+    return date
+
+def search_iopscience_table_captions_old(soup_content):
+    tables = soup_content.find_all('table')
+    captions = []
+    for table in tables:
+        caption = table.find('caption')
+        caption_text = caption.get_text()
+        captions.append(caption_text)
+    return captions
+
 # Search for table info in iopscience journal, including notes and caption
 def search_iopscience_table_info(soup_content):
     table_info = {}
+    
     table_info['notes'] = search_iopscience_table_notes(soup_content)
     table_info['caption'] = search_iopscience_table_captions(soup_content)
+    
+    if len(table_info['caption']) == 0:
+        table_info['notes'] = search_iopscience_table_notes_old(soup_content)
+        table_info['caption'] = search_iopscience_table_captions_old(soup_content)
+ 
     return table_info
 
 # Write mrt file containing full versions for tables of iopscience journals
@@ -199,6 +225,23 @@ def extract_mrt_metadata(table_lines):
     authors = extract_mrt_authors(table_lines)
     caption = extract_mrt_table_caption(table_lines)
     return title, authors, caption
+
+def search_iopscience_authors_old(soup_content):
+    authors = []
+   
+    h2_tag = soup_content.find('h2')
+    author_pattern = r'^au\d+'
+
+    a_tags = h2_tag.find_all('a')
+    
+    for a_tag in a_tags:
+        name = a_tag['name']
+        if name == None:
+            continue
+        if re.match(author_pattern, name):
+            name = a_tag.get_text()
+            authors.append(name)
+    return authors
 
 # Convert mrt metadata to json
 def mrt_metadata_to_json(title, authors, caption, json_data):  
