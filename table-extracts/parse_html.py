@@ -49,10 +49,16 @@ def replace_sub_tags(soup_content):
 # Extract all tables from html file provided in html form and extra footnotes for journals
 # Also replace sup and sub tags representing actual values 
 def extract_html_tables(soup_content):
+    supplements = []
     updated_soup = replace_sup_tags(soup_content)
     re_updated_soup = replace_sub_tags(updated_soup)
     tables = re_updated_soup.find_all('table')
-    return tables
+    for table in tables:
+        parent_element = table.parent
+        if 'Only a portion of ' in parent_element.get_text():
+            supplements.append('true')
+        else: supplements.append('false')
+    return tables, supplements
 
 
 # Search journal metadata (authors, title, date, journal) and return a map with the values (in json format)
@@ -124,7 +130,7 @@ def include_extra_metadata_json_data(extra_metadata, metadata, json_data):
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-def extract_table_data(table, title, footnotes, metadata, extra_metadata,table_info, table_number):
+def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, table_number, supplementary):
     json_data = {}
     current_table_info = {}
     if 'A&A' in title:
@@ -134,6 +140,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata,table_i
         current_table_info['caption'] = table_info['caption'][table_number]
         if table_info['notes']:
             current_table_info['notes'] = table_info['notes'][table_number]
+        if current_table_info['notes'] == '':
+            current_table_info.pop('notes')
     
     metadata['title'] = title.replace('_',  ' ')
  
@@ -153,6 +161,9 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata,table_i
     key_prefix = f'row1'
     # print(headers)
     table_info_to_json_data(metadata, current_table_info, json_data)
+    
+    if supplementary == 'true':
+        json_data['supplementary'] = 'true'
     
     extra_metadata['headers'] = headers
     extra_metadata['rows'] = 0
@@ -199,7 +210,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata,table_i
         convert_to_json_array(data_found, json_data,
                            key_prefix, valid_footnotes, domain, False)
       
- 
+        
     write_to_json_file('json_results', f'{title}', json_data)
     return json_data
 
@@ -244,7 +255,7 @@ def extract_downloaded_tables(directory_name):
             title_to_metadata[entry] = extract_journal_metadata(soup_content)
             continue
         
-        tables = extract_html_tables(soup_content)
+        tables, supplements = extract_html_tables(soup_content)
         
         parent_index = 'astrophysics'
         parent_index_id = 0
@@ -285,7 +296,7 @@ def extract_downloaded_tables(directory_name):
             global doc_index_id 
             doc_index_id += 1
 
-            json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index)
+            json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
             append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
         
         for mrt_index in mrt_indexes:
