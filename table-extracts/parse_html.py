@@ -140,7 +140,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         current_table_info['caption'] = table_info['caption'][table_number]
         if table_info['notes']:
             current_table_info['notes'] = table_info['notes'][table_number]
-        if current_table_info['notes'] == '':
+        if 'notes' in current_table_info and current_table_info['notes'] == '':
             current_table_info.pop('notes')
     
     metadata['title'] = title.replace('_',  ' ')
@@ -184,8 +184,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     if headers:
         header_count = key_prefix[len(key_prefix) - 1]
         
-    table_rows = table.find_all("tr")
-    for row in table_rows[0:]:
+    table_rows = list(table.find_all("tr"))
+    for row in table_rows:
         row_index = table_rows.index(row) + 1
         index = int(header_count) + row_index 
         key_prefix = f'row{str(index)}'
@@ -271,9 +271,10 @@ def extract_downloaded_tables(directory_name):
             footnotes =  search_aanda_footnotes(soup_content)
             table_info = search_aanda_table_info(soup_content)
             metadata = search_aanda_journal_metadata(entry)
-
+        
+        mrt_indexes = {}
+        
         if 'IOPscience' in entry:
-            mrt_indexes = {}
             table_info = search_iopscience_table_info(soup_content)
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
@@ -286,7 +287,16 @@ def extract_downloaded_tables(directory_name):
                 
         parent_index_id = 1   
         index_parent(parent_index, parent_index_id)
+        pattern = r"<br\s*/>\s*(.*?)\s*<br\s*/>"
 
+        # Use re.findall to find all occurrences of the pattern in the HTML content
+        matches = re.findall(pattern, str(soup_content), re.DOTALL)
+        note_pattern = 'N<font size="-1">OTE</font>.<img align="BOTTOM" alt="—" src="https://images.static.cld.iop.org/AJ/ucp-icons/mdash.gif?doi=10.1086/313034"/>'
+        # footnote_pattern = '</sup></a>'
+        for match in matches:
+            if note_pattern in match:
+                print(match.replace(note_pattern, 'NOTE.'))
+            
         for table in tables:
             title = entry.replace('.html', '')
             index = tables.index(table)
