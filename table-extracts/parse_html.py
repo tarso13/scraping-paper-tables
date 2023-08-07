@@ -118,6 +118,9 @@ def convert_to_json_array(list, json_data, key_prefix, footnotes, journal, heade
 
 # Add metadata and table info in json data for a table
 def table_info_to_json_data(metadata, table_info, json_data):
+    if 'headers' in metadata:
+        if len(list(metadata['headers'])) == 0:
+            metadata.pop('headers')
     json_data['metadata'] = metadata
     json_data['table info'] = table_info
 
@@ -164,8 +167,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     
     if supplementary == 'true':
         json_data['supplementary'] = 'true'
-    
-    extra_metadata['headers'] = headers
+        
+    if len(headers) != 0:
+        extra_metadata['headers'] = headers
+        
     extra_metadata['rows'] = 0
     extra_metadata['cols'] = len(headers)
     

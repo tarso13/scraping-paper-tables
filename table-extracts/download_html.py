@@ -3,7 +3,10 @@ from parse_html import extract_table_data, extract_journal_metadata, search_aand
 from tldextract import extract
 from urllib.parse import urlparse
 import os
-import httplib2
+import requests
+
+# Headers to be used when retrieving urls 
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
 
 # List of invalid words which may be encountered in paper titles
 invalid_characters_as_words = ['#', '<', '$', '+', '%', '>', '!', '.',
@@ -46,10 +49,9 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
         create_directory(directory_name)
         downloaded_files = os.listdir(directory_name)
         print('Downloading ' + url)
-        http = httplib2.Http()
-        _, content = http.request(url)
+        response = requests.get(url, headers=headers)
+        content = response.text
         new_title = setup_title(fetch_title(content))
-        
         if 'iopscience' in directory_name and 'IOPscience' not in new_title:
             new_title = f'{new_title}_IOPscience'
         
@@ -61,13 +63,13 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
         
         path_to_file = os.path.join(directory_name, local_file)
 
-        with open(path_to_file, 'wb') as file:
+        with open(path_to_file, 'w', encoding='utf-8') as file:
             file.write(content)
         
         if 'A&A' in local_file and 'A&A)_T' not in local_file:
           path_to_extra_file = f'{os.path.join(directory_name, directory_name)}_tables'
           aanda_download_extra_files(content, path_to_extra_file, downloaded_files, download_extra_files)
-    except httplib2.HttpLib2Error as e:
+    except requests.RequestException as e:
         print(str(e), ' while retrieving ', url)
 
 
@@ -111,8 +113,8 @@ def aanda_download_extra_files(content, directory_name, downloaded_files, downlo
         full_path = f'https://{domain_found}{path_to_table}'
         suffix = table_suffix(path_to_table)
         if not download_extra_files:
-            http = httplib2.Http()
-            _, content = http.request(full_path)
+            response = requests.get(full_path, headers=headers)
+            content = response.text
             extract_undownloaded_tables(content, f'{title}{suffix}', title)   
             continue                                        
         html_local_path = f'{title}{suffix}.html'

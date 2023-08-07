@@ -151,8 +151,10 @@ def write_mrt_file(directory_name, title, content):
 
 # Convert mrt table units and header explanations to json format
 def mrt_headers_to_json(units, explanations, json_data):
-    json_data['units'] = units
-    json_data['header explanations'] = explanations
+    if 'metadata' not in json_data:
+        json_data['metadata'] = {}
+    json_data['metadata']['units'] = units
+    json_data['metadata']['header explanations'] = explanations
     return json_data
     
 # Convert mrt table data to json format
@@ -244,10 +246,11 @@ def search_iopscience_authors_old(soup_content):
     return authors
 
 # Convert mrt metadata to json
-def mrt_metadata_to_json(title, authors, caption, json_data):  
-    json_data['title'] = title
-    json_data['authors'] = authors
-    json_data['caption'] = caption
+def mrt_metadata_to_json(title, authors, caption, json_data): 
+    json_data['metadata'] = {}
+    json_data['metadata']['title'] = title
+    json_data['metadata']['authors'] = authors
+    json_data['metadata']['caption'] = caption
     return json_data
 
 def extract_mrt_units_and_explanations(table_lines):
@@ -301,7 +304,6 @@ def extract_iopscience_mrt_tables(soup_content, directory_name):
             lines = mrt_file.readlines()
             title, authors, caption = extract_mrt_metadata(lines)
             units, explanations = extract_mrt_units_and_explanations(lines)
-            
             data = ascii.read(path_to_mrt, format='mrt')
             df = data.to_pandas()
             table = df.to_dict()
