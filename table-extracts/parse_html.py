@@ -129,6 +129,12 @@ def include_extra_metadata_json_data(extra_metadata, metadata, json_data):
         metadata[key] = extra_metadata[key]
     json_data['metadata'] = metadata
 
+def extract_table_id(title):
+    pattern = r'_T\d+'  # The regular expression pattern for '_T' followed by one or more digits (\d+)
+    table_ids = re.findall(pattern, title)
+    table_id = table_ids[0].replace('_', '')
+    return table_id
+
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
@@ -145,9 +151,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
             current_table_info['notes'] = table_info['notes'][table_number]
         if 'notes' in current_table_info and current_table_info['notes'] == '':
             current_table_info.pop('notes')
-    
-    metadata['title'] = title.replace('_',  ' ')
- 
+            
     key_prefix = f'row'
     headers = []
     extra_headers = []
@@ -163,6 +167,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     
     key_prefix = f'row1'
     # print(headers)
+    table_id = extract_table_id(title)
+    metadata['title'] = title.replace('_',  ' ').replace(table_id, '')
+    metadata['table id'] = table_id
+    
     table_info_to_json_data(metadata, current_table_info, json_data)
     
     if supplementary == 'true':
@@ -262,7 +270,7 @@ def extract_downloaded_tables(directory_name):
         
         tables, supplements = extract_html_tables(soup_content)
         
-        parent_index = 'astrophysics'
+        parent_index = 'astro'
         parent_index_id = 0
         footnotes = None
         metadata = {}
@@ -292,18 +300,10 @@ def extract_downloaded_tables(directory_name):
                 
         parent_index_id = 1   
         index_parent(parent_index, parent_index_id)
-        pattern = r"<br\s*/>\s*(.*?)\s*<br\s*/>"
-
-        # Use re.findall to find all occurrences of the pattern in the HTML content
-        matches = re.findall(pattern, str(soup_content), re.DOTALL)
-        note_pattern = 'N<font size="-1">OTE</font>.<img align="BOTTOM" alt="—" src="https://images.static.cld.iop.org/AJ/ucp-icons/mdash.gif?doi=10.1086/313034"/>'
-        # footnote_pattern = '</sup></a>'
-        for match in matches:
-            if note_pattern in match:
-                print(match.replace(note_pattern, 'NOTE.'))
-            
+     
         for table in tables:
             title = entry.replace('.html', '')
+            
             index = tables.index(table)
             if 'IOPscience' in title:
                 title += f'_T{str(index + 1)}'
@@ -312,10 +312,8 @@ def extract_downloaded_tables(directory_name):
             doc_index_id += 1
 
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
-            append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
-        
+            append_to_elastic_index(parent_index, doc_index_id, json_data)   
+           
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            append_to_elastic_index(actions, parent_index, doc_index_id, mrt_index, mrt_indexes[mrt_index])
-        
-        upload_new_index(parent_index, actions)
+            append_to_elastic_index(parent_index, doc_index_id, mrt_indexes[mrt_index])

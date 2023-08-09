@@ -134,13 +134,11 @@ def download_extra_html_files(directory_name, url_suffixes, download_extra_files
 # Extract all table data found in html content without downloading the extra files and print them
 def extract_undownloaded_tables(content, title, entry):
     parent_index = ''
-    actions = []
-    
     soup_content = BeautifulSoup(content, 'html.parser')
     
     tables, _ = extract_html_tables(soup_content)
     
-    parent_index = 'astrophysics'
+    parent_index = 'astro'
     parent_index_id = 0
     footnotes = None
     metadata = {}
@@ -156,13 +154,11 @@ def extract_undownloaded_tables(content, title, entry):
     index_parent(parent_index, parent_index_id)
             
     for table in tables:
-        title = entry.replace('.html', '')
         index = tables.index(table)
 
         global doc_index_id 
         doc_index_id += 1
 
         json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, 'false')
-        append_to_elastic_index(actions, parent_index, doc_index_id, title.replace('_', ' '), json_data)
+        append_to_elastic_index(parent_index, doc_index_id, json_data)
     
-    upload_new_index(parent_index, actions)
