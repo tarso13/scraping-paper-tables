@@ -25,7 +25,7 @@ def index_parent(parent_index, parent_index_id):
 # Read elastic password from file so as to keep it private  
 # Create a connection to Elasticsearch
 # Update the parent index with new content
-def add_document_to_actions(parent_index, doc_index_id, content):
+def add_document_to_index(parent_index, doc_index_id, content):
     elastic_password = get_password('../elastic_password.txt')
 
     es = Elasticsearch(

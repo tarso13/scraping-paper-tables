@@ -4,6 +4,7 @@ import os
 import astropy.io.ascii as ascii
 import pandas
 
+
 # Value used to replace undesired word occurences in datasets
 EMPTY = '' 
 
@@ -165,6 +166,10 @@ def mrt_table_data_to_json(mrt_table, json_data):
     for key in mrt_table:
         key_count += 1
         keys.append({'content': key, 'header': 'true'})
+        json_data['metadata']['header explanations'][key_count - 1] = json_data['metadata']['header explanations'][key_count - 1].strip()
+        metadata_header = json_data['metadata']['header explanations'][key_count - 1]
+        if key in metadata_header:
+            json_data['metadata']['header explanations'][key_count - 1] = metadata_header.replace(key, '').strip()
         key_indexes[key] = key_count
         
     for key in keys:
@@ -276,7 +281,7 @@ def extract_mrt_units_and_explanations(table_lines):
             line_list = list(line.replace('  ', ' ').split(' '))
             units.append(line_list[5])
             explanation = ''
-            for i in range (8, len(line_list)):
+            for i in range (6, len(line_list)):
                 word = line_list[i].replace('\n', '')
                 if line_list[i] != ' ':
                     explanation += f'{word} '
@@ -290,10 +295,11 @@ def extract_iopscience_mrt_tables(soup_content, directory_name):
     web_refs = soup_content.find_all("a", {"class": "webref"})
     json_results = []
     mrt_titles = []
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
     for web_ref in web_refs:
         if 'machine-readable' in web_ref.get_text():
             href = web_ref['href'] 
-            mrt_html = requests.get(href)
+            mrt_html = requests.get(href, headers)
             mrt_title = extract_mrt_title(href)
             mrt_titles.append(mrt_title)
             content = mrt_html.content

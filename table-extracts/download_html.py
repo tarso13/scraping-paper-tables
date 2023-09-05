@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from parse_html import extract_table_data, extract_journal_metadata, search_aanda_footnotes, search_aanda_journal_metadata,search_aanda_table_info, extract_html_tables, title_to_metadata, index_parent, append_to_elastic_index, upload_new_index, doc_index_id
+from parse_html import extract_table_data, extract_journal_metadata, search_aanda_footnotes, search_aanda_journal_metadata,search_aanda_table_info, extract_html_tables, title_to_metadata, index_parent, append_to_elastic_index, doc_index_id
 from tldextract import extract
 from urllib.parse import urlparse
 import os

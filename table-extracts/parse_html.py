@@ -78,11 +78,7 @@ def search_metadata(soup_content):
                 metadata['title'] = content
             case 'citation_publication_date':
                 metadata['date'] = content
-    
-    if len(authors) == 0:
-        metadata['journal'] = 'IOPscience'
-        authors = search_iopscience_authors_old(soup_content)
-        metadata['date'] = search_iopscience_date_old(soup_content)
+
     metadata['author(s)'] = authors
     return metadata
 
@@ -238,15 +234,14 @@ def write_to_json_file(directory_name, title, json_data):
     file.write(json.dumps(json_data, indent = 1))
 
 # Append document to actions in order to update the parent elastic index
-def append_to_elastic_index(actions, parent_index, doc_index_id, title, content):
-    add_document_to_actions(actions, parent_index, doc_index_id, title, content)
+def append_to_elastic_index(parent_index, doc_index_id, title, content):
+    add_document_to_index(parent_index, doc_index_id, title, content)
     
 # Extract all table data found in html files in given directory and print them
 def extract_downloaded_tables(directory_name):
     if os.path.exists(directory_name) == False:
         return
     parent_index = ''
-    actions = []
     
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
@@ -269,7 +264,7 @@ def extract_downloaded_tables(directory_name):
             continue
         
         tables, supplements = extract_html_tables(soup_content)
-        
+
         parent_index = 'astro'
         parent_index_id = 0
         footnotes = None
@@ -291,6 +286,7 @@ def extract_downloaded_tables(directory_name):
             table_info = search_iopscience_table_info(soup_content)
             footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
+           
             mrt_titles, json_results = extract_iopscience_mrt_tables(soup_content, 'iopscience_mrts')
             for result in json_results:
                 index = json_results.index(result)
