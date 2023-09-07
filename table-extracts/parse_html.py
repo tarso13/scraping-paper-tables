@@ -4,6 +4,7 @@ import json
 from upload_elastic_index import *
 from aanda_parser import *
 from iopscience_parser import *
+from mnras_parser import *
 
 doc_index_id = 0 
 
@@ -27,6 +28,8 @@ def replace_sup_tags(soup_content):
         return
     for sup_tag in sup_tags:
         sup_text = sup_tag.get_text()
+        if sup_tag.contents[0].string == None:
+            continue
         sup_tag.contents[0].string.replace_with(f'^{sup_text}')
          
     return soup_content
@@ -146,8 +149,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         if table_info['notes']:
             current_table_info['notes'] = table_info['notes'][table_number]
         if 'notes' in current_table_info and current_table_info['notes'] == '':
-            current_table_info.pop('notes')
-            
+            current_table_info.pop('notes')      
+                
     key_prefix = f'row'
     headers = []
     extra_headers = []
@@ -163,9 +166,19 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     
     key_prefix = f'row1'
     # print(headers)
-    table_id = extract_table_id(title)
-    metadata['title'] = title.replace('_',  ' ').replace(table_id, '')
-    metadata['table id'] = table_id
+    if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
+        table_parent_element = table.parent.parent.parent
+        table_id = table_parent_element.find("span", {"class":"label title-label"}).get_text()
+        table_id = table_id.replace('Table','').replace('.','').strip()
+        table_suffix = f'T{table_id}'
+        title += f'_{table_suffix}'
+        metadata['table id'] = table_suffix
+        caption = table_parent_element.find("div", {"class":"caption"}).get_text()
+        current_table_info['caption'] = caption
+    else:
+        table_id = extract_table_id(title)
+        metadata['title'] = title.replace('_',  ' ').replace(table_id, '')
+        metadata['table id'] = table_id
     
     table_info_to_json_data(metadata, current_table_info, json_data)
     
@@ -295,7 +308,7 @@ def extract_downloaded_tables(directory_name):
                 mrt_indexes[mrt_title] = result
                 
         parent_index_id = 1   
-        index_parent(parent_index, parent_index_id)
+        # index_parent(parent_index, parent_index_id)
      
         for table in tables:
             title = entry.replace('.html', '')
@@ -307,9 +320,16 @@ def extract_downloaded_tables(directory_name):
             global doc_index_id 
             doc_index_id += 1
 
+            if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
+                date, journal, authors = extract_mnras_extra_metadata(soup_content)
+                metadata['journal'] = journal
+                metadata['title'] = title.replace('_', ' ')
+                metadata['date'] = date
+                metadata['authors'] = authors
+               
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
-            append_to_elastic_index(parent_index, doc_index_id, json_data)   
+            # append_to_elastic_index(parent_index, doc_index_id, json_data)   
            
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            append_to_elastic_index(parent_index, doc_index_id, mrt_indexes[mrt_index])
+            # append_to_elastic_index(parent_index, doc_index_id, mrt_indexes[mrt_index])
