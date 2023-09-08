@@ -169,30 +169,11 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     key_prefix = f'row1'
     # print(headers)
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
-        table_parent_element = table.parent.parent.parent
-        table_id = table_parent_element.find("span", {"class":"label title-label"}).get_text()
-        table_id = table_id.replace('Table','').replace('.','').strip()
+        table_id = identify_mnras_table_id(table)
         table_suffix = f'T{table_id}'
         title += f'_{table_suffix}'
         metadata['table id'] = table_suffix
-        caption = table_parent_element.find("div", {"class":"caption"}).get_text()
-        notes_elements = table_parent_element.find_all("div", {"class":"table-wrap-foot"})
-        if notes_elements:
-            notes = ''
-            for notes_element in notes_elements:
-                notes += notes_element.get_text()
-                footnote_tag = notes_element.find("div", {"class":"footnote"})
-                if footnote_tag:
-                    span_tag = footnote_tag.find("span")
-                    sup_tag = span_tag.find("sup")
-                    if not sup_tag:
-                        continue
-                    footnote = sup_tag.get_text()
-                    footnote_content = span_tag.find("p", {"class":"chapter-para"}).get_text()
-                    mnras_footnotes[footnote] = footnote_content
-            current_table_info['notes'] = notes.replace('Notes.', '').replace('Note.', '')
-        # all footnotes for each table are included in the notes section.
-        current_table_info['caption'] = caption
+        current_table_info = search_mnras_table_info_and_footnotes(table)
     else:
         table_id = extract_table_id(title)
         metadata['title'] = title.replace('_',  ' ').replace(table_id, '')
