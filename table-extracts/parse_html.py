@@ -174,6 +174,12 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         title += f'_{table_suffix}'
         metadata['table id'] = table_suffix
         caption = table_parent_element.find("div", {"class":"caption"}).get_text()
+        notes_elements = table_parent_element.find_all("div", {"class":"table-wrap-foot"})
+        if notes_elements:
+            notes = ''
+            for notes_element in notes_elements:
+                notes += notes_element.get_text()
+            current_table_info['notes'] = notes.replace('Notes.', '').replace('Note.', '')
         current_table_info['caption'] = caption
     else:
         table_id = extract_table_id(title)
