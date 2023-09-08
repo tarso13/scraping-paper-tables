@@ -11,7 +11,7 @@ doc_index_id = 0
 # List containing the html files with tables that have been extracted
 files_extracted = []
 
-# Map containing the (extra) url as key and the table suffix as value
+# Map containing an (extra) url as key and a table suffix as value
 url_suffixes = {}
 
 # Get file content
@@ -96,6 +96,8 @@ def footnote_to_json_object(journal, footnotes, entry, json_obj, key_prefix):
         search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj)
     if journal == 'IOPscience':
         search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj, key_prefix)
+    if journal == 'mnras':
+        search_and_add_mnras_footnote_to_obj(footnotes, entry, json_obj)
         
 # Convert list of data extracted from table to json array
 def convert_to_json_array(list, json_data, key_prefix, footnotes, journal, header):
@@ -179,7 +181,17 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
             notes = ''
             for notes_element in notes_elements:
                 notes += notes_element.get_text()
+                footnote_tag = notes_element.find("div", {"class":"footnote"})
+                if footnote_tag:
+                    span_tag = footnote_tag.find("span")
+                    sup_tag = span_tag.find("sup")
+                    if not sup_tag:
+                        continue
+                    footnote = sup_tag.get_text()
+                    footnote_content = span_tag.find("p", {"class":"chapter-para"}).get_text()
+                    mnras_footnotes[footnote] = footnote_content
             current_table_info['notes'] = notes.replace('Notes.', '').replace('Note.', '')
+        # all footnotes for each table are included in the notes section.
         current_table_info['caption'] = caption
     else:
         table_id = extract_table_id(title)
@@ -219,7 +231,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         key_prefix = f'row{str(index)}'
         data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
             '\n', EMPTY).replace('  ','') for td in row.find_all("td"))
-      
+        
         if row_index == 1:
             extra_metadata['rows'] = len(table_rows)
             if not len(headers):    
@@ -227,6 +239,11 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
             include_extra_metadata_json_data(extra_metadata, metadata, json_data)
         
         domain = ''
+        
+        if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
+            valid_footnotes = mnras_footnotes   
+            domain = 'mnras'
+            
         # print(data_found)
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
