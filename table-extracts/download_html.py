@@ -153,7 +153,7 @@ def extract_undownloaded_tables(content, title, entry):
         metadata = search_aanda_journal_metadata(entry)
     
     parent_index_id = 1   
-    # index_parent(parent_index, parent_index_id)
+    index_parent(parent_index, parent_index_id)
             
     for table in tables:
         index = tables.index(table)
@@ -162,5 +162,5 @@ def extract_undownloaded_tables(content, title, entry):
         doc_index_id += 1
 
         json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, 'false')
-        # append_to_elastic_index(parent_index, doc_index_id, json_data)
+        append_to_elastic_index(parent_index, doc_index_id, json_data)
     

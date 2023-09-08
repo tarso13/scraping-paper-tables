@@ -251,8 +251,8 @@ def write_to_json_file(directory_name, title, json_data):
     file.write(json.dumps(json_data, indent = 1))
 
 # Append document to actions in order to update the parent elastic index
-def append_to_elastic_index(parent_index, doc_index_id, title, content):
-    add_document_to_index(parent_index, doc_index_id, title, content)
+def append_to_elastic_index(parent_index, doc_index_id, content):
+    add_document_to_index(parent_index, doc_index_id, content)
     
 # Extract all table data found in html files in given directory and print them
 def extract_downloaded_tables(directory_name):
@@ -312,7 +312,7 @@ def extract_downloaded_tables(directory_name):
                 mrt_indexes[mrt_title] = result
                 
         parent_index_id = 1   
-        # index_parent(parent_index, parent_index_id)
+        index_parent(parent_index, parent_index_id)
      
         for table in tables:
             title = entry.replace('.html', '')
@@ -332,8 +332,8 @@ def extract_downloaded_tables(directory_name):
                 metadata['authors'] = authors
                
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
-            # append_to_elastic_index(parent_index, doc_index_id, json_data)   
+            append_to_elastic_index(parent_index, doc_index_id, json_data)   
            
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            # append_to_elastic_index(parent_index, doc_index_id, mrt_indexes[mrt_index])
+            append_to_elastic_index(parent_index, doc_index_id, mrt_indexes[mrt_index])
