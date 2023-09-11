@@ -165,12 +165,12 @@ def mrt_table_data_to_json(mrt_table, json_data):
     key_count = 0
     for key in mrt_table:
         key_count += 1
-        keys.append({'content': key, 'header': 'true'})
+        keys.append({'content': str(key), 'header': 'true'})
         json_data['metadata']['header explanations'][key_count - 1] = json_data['metadata']['header explanations'][key_count - 1].strip()
         metadata_header = json_data['metadata']['header explanations'][key_count - 1]
         if key in metadata_header:
             json_data['metadata']['header explanations'][key_count - 1] = metadata_header.replace(key, '').strip()
-        key_indexes[key] = key_count
+        key_indexes[key] = str(key_count)
         
     for key in keys:
         key_index = keys.index(key)
@@ -185,7 +185,7 @@ def mrt_table_data_to_json(mrt_table, json_data):
         for value in values:
             if f'row{str(counter + 1)}' not in json_data:
                 json_data[f'row{str(counter + 1)}'] = []
-            json_data[f'row{str(counter + 1)}'].append({f'col{str(col_index)}':{'content' : values[value]}})
+            json_data[f'row{str(counter + 1)}'].append({f'col{str(col_index)}':{'content' : str(values[value])}})
             counter += 1
         
     return json_data
@@ -193,7 +193,6 @@ def mrt_table_data_to_json(mrt_table, json_data):
 # The function extract_mrt_table_title, extract_mrt_authors, extract_mrt_table_caption
 # are helper functions based on observation for the mrt files used in iopscience journals (html form)
 # Thus, they should be used the order provided due to changes made to 'table_lines' while parsing the journal metadata.
-
 def extract_mrt_table_title(table_lines):
     title = ''
     for line in table_lines:
@@ -299,11 +298,11 @@ def extract_iopscience_mrt_tables(soup_content, directory_name):
     for web_ref in web_refs:
         if 'machine-readable' in web_ref.get_text():
             href = web_ref['href'] 
-            mrt_html = requests.get(href, headers)
+            # mrt_html = requests.get(href, headers)
             mrt_title = extract_mrt_title(href)
             mrt_titles.append(mrt_title)
-            content = mrt_html.content
-            write_mrt_file(directory_name, mrt_title, content)
+            # content = mrt_html.content
+            # write_mrt_file(directory_name, mrt_title, content)
             path_to_mrt = os.path.join(directory_name, f'{mrt_title}.txt')
           
             mrt_file = open(path_to_mrt, 'r')

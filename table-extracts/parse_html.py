@@ -80,7 +80,7 @@ def search_metadata(soup_content):
             case 'citation_title':
                 metadata['title'] = content
             case 'citation_publication_date':
-                metadata['date'] = content
+                metadata['date'] = str(content).replace('/', '-')
 
     metadata['author(s)'] = authors
     return metadata
@@ -108,7 +108,7 @@ def convert_to_json_array(list, json_data, key_prefix, footnotes, journal, heade
     for entry in list:
         json_obj = {}
         index = f'col{str(counter)}'    
-        json_obj[index] = {'content' : entry}
+        json_obj[index] = {'content' : str(entry)}
         if header == True:
             json_obj[index]['header'] = 'true'
         if footnotes:
@@ -328,12 +328,12 @@ def extract_downloaded_tables(directory_name):
                 date, journal, authors = extract_mnras_extra_metadata(soup_content)
                 metadata['journal'] = journal
                 metadata['title'] = title.replace('_', ' ')
-                metadata['date'] = date
+                metadata['date'] = str(date).replace('/', '-')
                 metadata['authors'] = authors
                
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
             append_to_elastic_index(parent_index, doc_index_id, json_data)   
-           
+        
         for mrt_index in mrt_indexes:
             doc_index_id += 1
             append_to_elastic_index(parent_index, doc_index_id, mrt_indexes[mrt_index])
