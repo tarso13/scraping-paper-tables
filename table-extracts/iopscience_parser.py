@@ -1,9 +1,7 @@
 import re
-import requests
 import os
 import astropy.io.ascii as ascii
-import pandas
-
+import requests
 
 # Value used to replace undesired word occurences in datasets
 EMPTY = '' 
@@ -107,12 +105,6 @@ def search_iopscience_table_captions(soup_content):
         captions.append(p_text)
     return captions
 
-def search_iopscience_table_notes_old(soup_content):     
-    pass
-   
-def search_iopscience_footnotes_old(soup_content):
-    pass
-
 def search_iopscience_date_old(soup_content):
     h4_tag = soup_content.find('h4')
     date = h4_tag.get_text()
@@ -135,7 +127,6 @@ def search_iopscience_table_info(soup_content):
     table_info['caption'] = search_iopscience_table_captions(soup_content)
     
     if len(table_info['caption']) == 0:
-        table_info['notes'] = search_iopscience_table_notes_old(soup_content)
         table_info['caption'] = search_iopscience_table_captions_old(soup_content)
  
     return table_info
@@ -169,14 +160,14 @@ def mrt_table_data_to_json(mrt_table, json_data):
         json_data['metadata']['header explanations'][key_count - 1] = json_data['metadata']['header explanations'][key_count - 1].strip()
         metadata_header = json_data['metadata']['header explanations'][key_count - 1]
         if key in metadata_header:
-            json_data['metadata']['header explanations'][key_count - 1] = metadata_header.replace(key, '').strip()
+            header_expl = f'{key} - {metadata_header.replace(key, "").strip()}'
+            json_data['metadata']['header explanations'][key_count - 1] = header_expl
         key_indexes[key] = str(key_count)
         
     for key in keys:
         key_index = keys.index(key)
         keys[key_index] = {f'col{key_index + 1}': keys[key_index]}
     json_data['row1'] = keys
-
     
     for key in mrt_table:
         counter = 1
@@ -201,7 +192,7 @@ def extract_mrt_table_title(table_lines):
         title += line
         index = table_lines.index(line)
         table_lines[index] = ''
-    title.replace('Title:', '')
+    title = title.replace('Title:', '').strip()
     return title
 
 def extract_mrt_authors(table_lines):
@@ -212,7 +203,8 @@ def extract_mrt_authors(table_lines):
         authors += line
         index = table_lines.index(line)
         table_lines[index] = ''
-    authors.replace('Authors:','')
+    authors = authors.replace('Authors:','').strip()
+    
     return authors
 
 def extract_mrt_table_caption(table_lines):
@@ -222,7 +214,7 @@ def extract_mrt_table_caption(table_lines):
         if split_point in line:
             break
         caption += line
-    caption.replace('Table:','')
+    caption = caption.replace('Table:','').strip()
     return caption
 
 # Extract mrt metadata (title, authors and caption) for mrt table

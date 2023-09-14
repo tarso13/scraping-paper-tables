@@ -5,6 +5,7 @@ from upload_elastic_index import *
 from aanda_parser import *
 from iopscience_parser import *
 from mnras_parser import *
+import datetime as dt
 
 doc_index_id = 0 
 
@@ -80,8 +81,14 @@ def search_metadata(soup_content):
             case 'citation_title':
                 metadata['title'] = content
             case 'citation_publication_date':
-                metadata['date'] = str(content).replace('/', '-')
-
+                d = dt.datetime.strptime(str(content).replace('/', '-'), "%Y-%m-%d")
+                d = d.date()
+                metadata['date'] = d.isoformat()
+                print(d)
+            case 'citation_online_date':
+                d = dt.datetime.strptime(str(content).replace('/', '-'), "%Y-%m-%d")
+                d = d.date()
+                metadata['date'] = d.isoformat()
     metadata['author(s)'] = authors
     return metadata
 
