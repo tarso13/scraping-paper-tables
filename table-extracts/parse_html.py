@@ -84,7 +84,6 @@ def search_metadata(soup_content):
                 d = dt.datetime.strptime(str(content).replace('/', '-'), "%Y-%m-%d")
                 d = d.date()
                 metadata['date'] = d.isoformat()
-                print(d)
             case 'citation_online_date':
                 d = dt.datetime.strptime(str(content).replace('/', '-'), "%Y-%m-%d")
                 d = d.date()
@@ -335,12 +334,17 @@ def extract_downloaded_tables(directory_name):
                 date, journal, authors = extract_mnras_extra_metadata(soup_content)
                 metadata['journal'] = journal
                 metadata['title'] = title.replace('_', ' ')
-                metadata['date'] = str(date).replace('/', '-')
+                d = dt.datetime.strptime(str(date).replace('/', '-'), "%Y-%m-%d")
+                d = d.date()
+                metadata['date'] = d.isoformat()
                 metadata['authors'] = authors
                
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
             append_to_elastic_index(parent_index, doc_index_id, json_data)   
         
+        mrt_parent_index = 'mrt_astro'
+        mrt_parent_index_id = 1
+        index_parent(mrt_parent_index, mrt_parent_index_id)
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            append_to_elastic_index(parent_index, doc_index_id, mrt_indexes[mrt_index])
+            append_to_elastic_index(mrt_parent_index, doc_index_id, mrt_indexes[mrt_index])
