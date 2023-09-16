@@ -5,7 +5,6 @@ from upload_elastic_index import *
 from aanda_parser import *
 from iopscience_parser import *
 from mnras_parser import *
-import datetime as dt
 
 doc_index_id = 0 
 
@@ -81,13 +80,11 @@ def search_metadata(soup_content):
             case 'citation_title':
                 metadata['title'] = content
             case 'citation_publication_date':
-                d = dt.datetime.strptime(str(content).replace('/', '-'), "%Y-%m-%d")
-                d = d.date()
-                metadata['date'] = d.isoformat()
+                date = format_date(content)
+                metadata['date'] = date
             case 'citation_online_date':
-                d = dt.datetime.strptime(str(content).replace('/', '-'), "%Y-%m-%d")
-                d = d.date()
-                metadata['date'] = d.isoformat()
+                date = format_date(content)
+                metadata['date'] = date
     metadata['author(s)'] = authors
     return metadata
 
@@ -334,9 +331,8 @@ def extract_downloaded_tables(directory_name):
                 date, journal, authors = extract_mnras_extra_metadata(soup_content)
                 metadata['journal'] = journal
                 metadata['title'] = title.replace('_', ' ')
-                d = dt.datetime.strptime(str(date).replace('/', '-'), "%Y-%m-%d")
-                d = d.date()
-                metadata['date'] = d.isoformat()
+                formatted_date = format_date(date)
+                metadata['date'] = formatted_date
                 metadata['authors'] = authors
                
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
