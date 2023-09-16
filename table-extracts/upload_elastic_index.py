@@ -25,9 +25,8 @@ def index_parent(parent_index, parent_index_id):
    
     doc = {}
     
-    indx = es.index(index=parent_index, id=parent_index_id, document=doc)
-    print(indx)
-    print('\n')
+    es.index(index=parent_index, id=parent_index_id, document=doc)
+
 
 # Create a connection to Elasticsearch
 # Update the parent index with new content
@@ -49,34 +48,35 @@ def search_index_by_title(index, title):
     query = {    
         'query': {        
             'match': {            
-                'title' : title     
+                'metadata.title' : title     
             }    
         }
     }
 
-    result = es.search(index=index, body=query)
-    print(result)
-    print('\n')
+    results = es.search(index=index, body=query)
+    return results
    
 # Create a connection to Elasticsearch  
-# Search documents by content
-def search_index_by_content(index, content):
+# Search documents by brief notes on table caption
+def search_index_by_table_caption(index, content):
     es = establish_connection_to_index()
     
     query = {    
         'query': {        
-            'match': {            
-                'content' : content     
+            'match': {    
+                    'table info.caption' : content           
             }    
         }
     }
 
-    result = es.search(index=index, body=query)
-    print(result)
-    print('\n')
+    results = es.search(index=index, body=query)
+    return results
 
 # Create a connection to Elasticsearch
-# Search documents by content
+# Search documents by date range
+# The journals returned have publication date greater or equal to start_date given
+# and less or equal to end_date given
+# Note: Date should be either in yyyy-mm-dd or yyyy/mm/dd format
 def search_index_by_date(index, start_date, end_date):
     es = establish_connection_to_index()
     
@@ -96,7 +96,46 @@ def search_index_by_date(index, start_date, end_date):
 
     results = es.search(index=index, body=query)
     return results
+
+# Create a connection to Elasticsearch
+# Search documents by journal name
+# It is based on similarity of the given journal
+# name and the ones existent on index
+# e.g. 'The Astronomical Journal' returns both
+# 'The Astrophysical Journal' and 'The Astrophysical Journal' journals,
+# whereas 'Astronomical' returns only 'The Astrophysical Journal' journals
+def search_index_by_journal(index, journal):
+    es = establish_connection_to_index()
     
+    query = {    
+        'query': {        
+            'match': {
+                'metadata.journal' : journal
+                }
+            }
+        }
+
+    results = es.search(index=index, body=query)
+    return results
+
+# Create a connection to Elasticsearch
+# Search documents by author name
+def search_index_by_author(index, author):
+    es = establish_connection_to_index()
+    
+    query = {    
+        'query': {        
+            'match': {
+                'metadata.author(s)' : author
+                }
+            }
+        }
+
+    results = es.search(index=index, body=query)
+    print(results)
+    return results
+
+# Format date in order to guarantee its type in elastic document
 def format_date(date):
     d = dt.datetime.strptime(str(date).replace('/', '-'), "%Y-%m-%d")
     d = d.date()
