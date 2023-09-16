@@ -1,4 +1,4 @@
-from upload_elastic_index import search_index_by_author, search_index_by_date, search_index_by_journal, search_index_by_title, search_index_by_table_caption
+from elastic_index import search_index_by_author, search_index_by_date, search_index_by_journal, search_index_by_title, search_index_by_table_caption
 
 def main():
     index_name = 'astro'

@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 import os
 import json
-from upload_elastic_index import *
+from elastic_index import *
 from aanda_parser import *
 from iopscience_parser import *
 from mnras_parser import *
