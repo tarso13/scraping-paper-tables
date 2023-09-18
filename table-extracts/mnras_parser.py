@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup
 import json
 import re
 
@@ -7,8 +6,6 @@ mnras_footnotes = {}
 
 # Identify metadata of the whole mnras journal using the script tag including
 # specific data like date, authors and journal
-
-
 def extract_mnras_extra_metadata(soup_content):
     script_tags = soup_content.find_all('script')
     for script_tag in script_tags:
@@ -38,7 +35,9 @@ def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
             updated_data = data.replace(footnote, '')
             json_obj['content'] = updated_data
             json_obj['note'] = footnotes[footnote].replace(footnote, '')
-
+    
+            
+            
 # Identify table id in mnras journal
 def identify_mnras_table_id(table):
     table_parent_element = table.parent.parent.parent
@@ -64,15 +63,17 @@ def search_mnras_table_info_and_footnotes(table):
             note_text = notes_element.get_text()
             notes += note_text
             
-            footnote_tag = notes_element.find("div", {"class": "footnote"})
-            if footnote_tag:
-                span_tag = footnote_tag.find("span")
-                sup_tag = span_tag.find("sup")
-                if not sup_tag:
-                    continue
-                footnote = sup_tag.get_text()
-                footnote_content = span_tag.find(
-                    "p", {"class": "chapter-para"}).get_text()
-                mnras_footnotes[footnote] = footnote_content
+            footnote_tags = notes_element.find_all("div", {"class": "footnote"})
+            if footnote_tags:
+                for footnote_tag in footnote_tags:
+                    span_tag = footnote_tag.find("span")
+                    sup_tags = span_tag.find_all("sup")
+                    if not sup_tags:
+                        continue
+                    for sup_tag in sup_tags:
+                        footnote = sup_tag.get_text()
+                        footnote_content = span_tag.find(
+                            "p", {"class": "chapter-para"}).get_text()
+                        mnras_footnotes[footnote] = footnote_content
         table_info['notes'] = notes.replace('Notes.', '').replace('Note.', '')
     return table_info
