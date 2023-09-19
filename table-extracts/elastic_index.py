@@ -6,6 +6,9 @@ import datetime as dt
 
 documents = []
 
+minimum_results = 0
+maximum_results = 2000
+
 # Read elastic password from file so as to keep it private  
 # Create a connection to Elasticsearch
 def establish_connection_to_index():
@@ -45,7 +48,9 @@ def delete_an_index(index):
 def search_index_by_title(index, title):
     es = establish_connection_to_index()
     
-    query = {    
+    query = {  
+        'from': minimum_results,
+        'size': maximum_results,  
         'query': {        
             'match': {            
                 'metadata.title' : title     
@@ -61,7 +66,9 @@ def search_index_by_title(index, title):
 def search_index_by_table_caption(index, content):
     es = establish_connection_to_index()
     
-    query = {    
+    query = {  
+        'from': minimum_results,
+        'size': maximum_results,  
         'query': {        
             'match': {    
                     'table info.caption' : content           
@@ -83,7 +90,9 @@ def search_index_by_date(index, start_date, end_date):
     formatted_start_date = format_date(start_date)
     formatted_end_date = format_date(end_date)
     
-    query = {    
+    query = {   
+        'from': minimum_results,
+        'size': maximum_results,
         'query': {        
             'range': {
                 'metadata.date':{
@@ -98,18 +107,29 @@ def search_index_by_date(index, start_date, end_date):
     return results
 
 # Create a connection to Elasticsearch
+# Search documents by year
+def search_index_by_year(index, year):
+    start_date = format_date(f'{str(year)}-01-01')
+    end_date = format_date(f'{str(year)}-12-31')
+    return search_index_by_date(index, start_date, end_date)
+
+# Create a connection to Elasticsearch
+# Search documents by year range
+def search_index_by_year_range(index, start_year, end_year):
+    start_date = format_date(f'{str(start_year)}-01-01')
+    end_date = format_date(f'{str(end_year)}-12-31')
+    return search_index_by_date(index, start_date, end_date)
+    
+# Create a connection to Elasticsearch
 # Search documents by journal name
-# It is based on similarity of the given journal
-# name and the ones existent on index
-# e.g. 'The Astronomical Journal' returns both
-# 'The Astrophysical Journal' and 'The Astrophysical Journal' journals,
-# whereas 'Astronomical' returns only 'The Astronomical Journal' journals
 def search_index_by_journal(index, journal):
     es = establish_connection_to_index()
     
-    query = {    
+    query = { 
+        'from': minimum_results,
+        'size': maximum_results,   
         'query': {        
-            'match': {
+            'match_phrase': {
                 'metadata.journal' : journal
                 }
             }
@@ -123,7 +143,9 @@ def search_index_by_journal(index, journal):
 def search_index_by_author(index, author):
     es = establish_connection_to_index()
     
-    query = {    
+    query = {  
+        'from': minimum_results,
+        'size': maximum_results,  
         'query': {        
             'match': {
                 'metadata.author(s)' : author
