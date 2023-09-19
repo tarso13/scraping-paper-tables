@@ -24,7 +24,8 @@ def extract_mnras_extra_metadata(soup_content):
         json_data = json.loads(json_data)
         date = json_data["online_publication_date"].replace('/', '-')
         journal = json_data["siteid"]
-        authors = [json_data["authors"]]
+        authors_string = json_data["authors"]
+        authors = authors_string.split(',')
         return date, journal, authors
     return None, None, None
 

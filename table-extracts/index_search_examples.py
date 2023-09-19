@@ -16,7 +16,7 @@ def main():
     results = search_index_by_author(index_name, author)
     print(results)
     
-    results = search_index_by_year(index_name, end_year)
+    results = search_index_by_year(index_name, year)
     print(results)
 
     results = search_index_by_year_range(index_name, start_year, end_year)

@@ -203,7 +203,7 @@ def extract_mrt_authors(table_lines):
         authors += line
         index = table_lines.index(line)
         table_lines[index] = ''
-    authors = authors.replace('Authors:','').strip()
+    authors = authors.replace('Authors:','')
     
     return authors
 
