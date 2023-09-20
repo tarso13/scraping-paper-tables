@@ -116,7 +116,7 @@ def convert_to_json_array(list, json_data, key_prefix, footnotes, journal, heade
         if header == True:
             json_obj[index]['header'] = 'true'
         if footnotes:
-           footnote_to_json_object(journal, footnotes, entry, json_obj[index], key_prefix)
+            footnote_to_json_object(journal, footnotes, entry, json_obj[index], key_prefix)
 
         json_objects.append(json_obj)
         counter += 1
@@ -145,16 +145,14 @@ def extract_table_id(title):
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
 # and then converted into json files
-def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, table_number, supplementary):
+def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, supplementary):
     json_data = {}
     current_table_info = {}
     if 'A&A' in title:
         current_table_info = table_info
     
     if 'IOPscience' in title:
-        current_table_info['caption'] = table_info['caption'][table_number]
-        if table_info['notes']:
-            current_table_info['notes'] = table_info['notes'][table_number]
+        current_table_info = table_info
         if 'notes' in current_table_info and current_table_info['notes'] == '':
             current_table_info.pop('notes')      
                 
@@ -202,9 +200,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     
     journal = ''
     valid_footnotes = {}
-    
+ 
     if 'IOPscience' in title:
-        journal = 'IOPScience'
+        journal = 'IOPscience'
+        valid_footnotes = footnotes
         
     if 'A&A' in title:
         journal = 'A&A'
@@ -212,9 +211,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
                 footnotes, valid_footnotes, headers)
         
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
-        valid_footnotes = mnras_footnotes   
         journal = 'mnras'
-        
+        valid_footnotes = mnras_footnotes   
         
     convert_to_json_array(headers, json_data, f'row1', valid_footnotes, journal, True)
         
@@ -222,7 +220,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
                     footnotes, valid_footnotes, headers)
-        convert_to_json_array(extra_headers, json_data, key_prefix, footnotes, journal, True)
+        if 'IOPscience' in title:
+            valid_footnotes = footnotes
+            
+    convert_to_json_array(extra_headers, json_data, key_prefix, footnotes, journal, True)
     
     for row in table_rows:
         row_index = table_rows.index(row) + 1
@@ -310,8 +311,6 @@ def extract_downloaded_tables(directory_name):
         mrt_indexes = {}
         
         if 'IOPscience' in entry:
-            table_info = search_iopscience_table_info(soup_content)
-            footnotes =  search_iopscience_footnotes(soup_content, table_info)
             metadata = extract_journal_metadata(soup_content)
            
             mrt_titles, json_results = extract_iopscience_mrt_tables(soup_content, 'iopscience_mrts')
@@ -341,8 +340,12 @@ def extract_downloaded_tables(directory_name):
                 formatted_date = format_date(date)
                 metadata['date'] = formatted_date
                 metadata['authors'] = authors
-               
-            json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, index, supplements[index])
+            if 'IOPscience' in title:
+                footnotes =  search_iopscience_footnotes(table, table_info)
+                table_info['caption'] = search_iopscience_table_caption(table)
+                table_info['notes'] = search_iopscience_table_notes(table)
+       
+            json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, supplements[index])
             append_to_elastic_index(parent_index, doc_index_id, json_data)   
         
         mrt_parent_index = 'mrt_astro'

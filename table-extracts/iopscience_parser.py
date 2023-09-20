@@ -23,9 +23,7 @@ def search_and_add_iopscience_footnote_to_obj(footnotes, data, json_obj, key_pre
             if actual_key in data:
                 json_obj['content'] = json_obj['content'].replace(f'{actual_key}', '')
                 note = footnotes[index]
-                note[key] = note[key].replace('Note. ', '')
-                position = note[key].find(key)
-                json_obj['note'] = note[key][position + 1 : len(note[key])]
+                json_obj['note'] = note[key].strip()
                 if 'headers' in key_prefix:
                     footnotes.remove(footnote)
     
@@ -42,22 +40,26 @@ def remove_footnote_from_notes(res, table_info):
 # However, if they belong to rows containing table data they are likely encountered multiple
 # times. Hence, we should keep this information
 def identify_iopscience_footnotes(small_tag, footnotes, table_info):
-    footnote_value = small_tag.get_text().replace('\n', '').replace('  ', '')
+    footnote_value = small_tag.get_text().replace('\n', '').replace('  ', '').replace('Notes.', '').replace('Note.', '').strip()
     result = find_iopscience_footnotes(footnote_value)
+    footnote_values = footnote_value.split('.^')
+    for splitted_value in footnote_values:
+        index = footnote_values.index(splitted_value)
+        if splitted_value[0] != '^':
+            footnote_values[index] = f'^{splitted_value}'
+        if splitted_value[-1] != '.':
+            footnote_values[index] = f'{splitted_value}.'
+
     for res in result:
-        index = footnote_value.find(res)
-        if result.index(res) == len(result) - 1:
-         footnotes.append({res: footnote_value[index + 3: len(footnote_value)]})
-        else:
-            tmp = footnote_value.replace(res, '')
-            next_index = tmp[index:len(tmp)].find(result[result.index(res) + 1])
-            footnotes.append({res: footnote_value[index + 3: next_index]})
+        for splitted_value in footnote_values:
+            if res in splitted_value:
+                footnotes.append({res: splitted_value.replace(res, '').strip()})
         # remove_footnote_from_notes(res, table_info)
     return footnotes
 
 # Search for footnotes in iopscience journal
 def search_iopscience_footnotes(soup_content, table_info):
-    small_tags = soup_content.find_all('small')
+    small_tags = soup_content.parent.find_all('small')
     if small_tags == None:
         return
     
@@ -77,58 +79,39 @@ def search_iopscience_footnotes(soup_content, table_info):
 
 # Search for table notes in iopscience journal
 def search_iopscience_table_notes(soup_content):
-    p_tags = soup_content.find_all('p')
-    notes = []
+    notes = ''
+    p_tags = soup_content.parent.find_all('p')
     for p_tag in p_tags:
         small_tag = p_tag.find('small')
         if small_tag == None:
             continue
         strong_tag = small_tag.find('strong')
         if strong_tag == None:
-            notes.append('')
             continue 
-        notes.append(small_tag.get_text().replace('\n', '').replace('  ', ''))
-
+        notes = small_tag.get_text().replace('\n', '').replace('  ', '')
+        return notes
     return notes
 
 # Search for table captions in iopscience journal
-def search_iopscience_table_captions(soup_content):
-    p_tags = soup_content.find_all('p')
-    captions = []
+def search_iopscience_table_caption(soup_content):
+    p_tags = soup_content.parent.find_all('p')
+    caption = ''
     for p_tag in p_tags:
         b_tag = p_tag.find('b')
         if b_tag == None:
             continue
         if 'Table' not in b_tag.get_text():
             continue
-        p_text = p_tag.get_text().replace(b_tag.get_text(), '').replace('\xa0', EMPTY)
-        captions.append(p_text)
-    return captions
-
-def search_iopscience_date_old(soup_content):
-    h4_tag = soup_content.find('h4')
-    date = h4_tag.get_text()
-    return date
-
-def search_iopscience_table_captions_old(soup_content):
-    tables = soup_content.find_all('table')
-    captions = []
-    for table in tables:
-        caption = table.find('caption')
-        caption_text = caption.get_text()
-        captions.append(caption_text)
-    return captions
+        caption = p_tag.get_text().replace(b_tag.get_text(), '').replace('\xa0', EMPTY)
+        return caption
+    return caption
 
 # Search for table info in iopscience journal, including notes and caption
 def search_iopscience_table_info(soup_content):
     table_info = {}
-    
-    table_info['notes'] = search_iopscience_table_notes(soup_content)
-    table_info['caption'] = search_iopscience_table_captions(soup_content)
-    
-    if len(table_info['caption']) == 0:
-        table_info['caption'] = search_iopscience_table_captions_old(soup_content)
- 
+
+    table_info['caption'] = search_iopscience_table_caption(soup_content)
+
     return table_info
 
 # Write mrt file containing full versions for tables of iopscience journals
@@ -223,23 +206,6 @@ def extract_mrt_metadata(table_lines):
     authors = extract_mrt_authors(table_lines)
     caption = extract_mrt_table_caption(table_lines)
     return title, authors, caption
-
-def search_iopscience_authors_old(soup_content):
-    authors = []
-   
-    h2_tag = soup_content.find('h2')
-    author_pattern = r'^au\d+'
-
-    a_tags = h2_tag.find_all('a')
-    
-    for a_tag in a_tags:
-        name = a_tag['name']
-        if name == None:
-            continue
-        if re.match(author_pattern, name):
-            name = a_tag.get_text()
-            authors.append(name)
-    return authors
 
 # Convert mrt metadata to json
 def mrt_metadata_to_json(title, authors, caption, json_data): 
