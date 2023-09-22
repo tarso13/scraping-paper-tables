@@ -60,6 +60,23 @@ def search_index_by_title(index, title):
 
     results = es.search(index=index, body=query)
     return results
+
+# Search documents by word in their content
+def search_index_by_word_in_table(index, word):
+    es = establish_connection_to_index()
+    
+    query = {  
+        'from': minimum_results,
+        'size': maximum_results, 
+        'query': {
+            'simple_query_string' : {
+                 'query' : word
+            }
+        }
+    }
+
+    results = es.search(index=index, body=query)
+    return results
    
 # Create a connection to Elasticsearch  
 # Search documents by brief notes on table caption
@@ -154,7 +171,6 @@ def search_index_by_author(index, author):
         }
 
     results = es.search(index=index, body=query)
-    print(results)
     return results
 
 # Format date in order to guarantee its type in elastic document

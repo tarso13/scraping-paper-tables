@@ -1,4 +1,4 @@
-from elastic_index import search_index_by_author, search_index_by_year, search_index_by_year_range, search_index_by_journal, search_index_by_title, search_index_by_table_caption
+from elastic_index import search_index_by_author, search_index_by_year, search_index_by_year_range, search_index_by_journal, search_index_by_title, search_index_by_table_caption, search_index_by_word_in_table
 
 def main():
     index_name = 'astro'
@@ -9,6 +9,7 @@ def main():
     year = 2017
     start_year = 2012
     end_year = 2019
+    word = 'Ellipses'
     
     results = search_index_by_title(index_name, title)
     print(results)
@@ -26,6 +27,9 @@ def main():
     print(results)
     
     results = search_index_by_table_caption(index_name, content)
+    print(results)
+    
+    results = search_index_by_word_in_table(index_name, word)
     print(results)
 
 main()
