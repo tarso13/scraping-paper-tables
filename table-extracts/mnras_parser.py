@@ -35,7 +35,7 @@ def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
         if footnote in data:
             updated_data = data.replace(footnote, '')
             json_obj['content'] = updated_data
-            json_obj['note'] = footnotes[footnote].replace(footnote, '')
+            json_obj['note'] = footnotes[footnote].replace(footnote, '').replace('Notes.', '').replace('Note.', '').strip()
     
             
             
