@@ -5,6 +5,7 @@ from elastic_index import *
 from aanda_parser import *
 from iopscience_parser import *
 from mnras_parser import *
+from datetime import datetime
 
 doc_index_id = 0 
 
@@ -28,7 +29,7 @@ def replace_sup_tags(soup_content):
         return
     for sup_tag in sup_tags:
         sup_text = sup_tag.get_text()
-        if sup_tag.contents[0].string == None:
+        if not sup_tag.contents or not sup_tag.contents[0].string:
             continue
         sup_tag.contents[0].string.replace_with(f'^{sup_text}')
          
@@ -148,6 +149,7 @@ def extract_table_id(title):
 def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, supplementary):
     json_data = {}
     current_table_info = {}
+
     if 'A&A' in title:
         current_table_info = table_info
     
@@ -229,8 +231,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         row_index = table_rows.index(row) + 1
         index = row_index 
         key_prefix = f'row{str(index)}'
-        data_found = list(td.get_text().replace('\xa0', EMPTY).replace(
-            '\n', EMPTY).replace('  ','') for td in row.find_all("td"))
+        data_found = list(str(td.get_text().replace('\xa0', EMPTY).replace(
+            '\n', EMPTY).replace('  ','')) for td in row.find_all("td"))
         
         if row_index == 1:
             extra_metadata['rows'] = len(table_rows)
@@ -293,7 +295,7 @@ def extract_downloaded_tables(directory_name):
         
         tables, supplements = extract_html_tables(soup_content)
 
-        parent_index = 'astro'
+        parent_index = 'astro23'
         parent_index_id = 0
         footnotes = None
         metadata = {}
@@ -304,10 +306,12 @@ def extract_downloaded_tables(directory_name):
             continue
         
         if 'A&A' in entry:
-            footnotes =  search_aanda_footnotes(soup_content)
-            table_info = search_aanda_table_info(soup_content)
             metadata = search_aanda_journal_metadata(entry)
-        
+            d = dt.datetime.strptime(metadata['date'], "%Y-%m-%d")
+            year = d.year
+            footnotes =  search_aanda_footnotes(soup_content, year)
+            table_info = search_aanda_table_info(soup_content)
+           
         mrt_indexes = {}
         
         if 'IOPscience' in entry:
@@ -322,10 +326,10 @@ def extract_downloaded_tables(directory_name):
                 
         parent_index_id = 1   
         index_parent(parent_index, parent_index_id)
-     
+    
         for table in tables:
             title = entry.replace('.html', '')
-            
+
             index = tables.index(table)
             if 'IOPscience' in title:
                 title += f'_T{str(index + 1)}'

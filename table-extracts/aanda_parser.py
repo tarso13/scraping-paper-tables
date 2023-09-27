@@ -5,19 +5,38 @@ EMPTY = ''
 title_to_metadata = {}
 
 # Search for footnotes in aanda articles
-def search_aanda_footnotes(soup_content):
-    notes_section = soup_content.find('div', class_='history')
-
-    if notes_section == None:
+def search_aanda_footnotes(soup_content, year):
+    notes_section = None
+    if year == 2022:
+        notes_section = soup_content.find('div', {'class' :'history'})
+    else:
+        notes_section = soup_content.find('div', {'class_' :'history'})
+        
+    if not notes_section or not notes_section.find('p'):
         return None
+    
+    notes = notes_section.find('p').get_text().replace('Notes.', '').replace('Note.', '').strip()
+    split_notes = notes.split('^')
+    split_notes.pop(0)
+    for split_note in split_notes:
+        split_note = f'^{split_note}'
 
     labels = notes_section.find_all('sup')
     footnotes_kvs = {}
 
+    if len(labels) > len(split_notes):
+        return None 
+    
     for label in labels:
+        index = labels.index(label)
         label_name = label.get_text(strip=True)
-        label_text = label.find_next('p').get_text(strip=True)
+        label_text = ''
+        if year == 2022:
+            label_text = split_notes[index].replace(label_name.replace('^',''), '')
+        else:
+            label_text = label.find_next('p').get_text(strip=True)
         footnotes_kvs[label_name] = label_text
+ 
     return footnotes_kvs
 
 # Search and extract table description and notes
@@ -27,20 +46,21 @@ def search_aanda_table_info(soup_content):
     notes_section = soup_content.find('div', class_='history')
     description_section = soup_content.find('div', id='annex')
 
-    if notes_section == None:
+    if not notes_section and description_section.find('p'):
         table_info['caption'] = description_section.find(
             'p').get_text(strip=True)
         return table_info
 
-    if description_section == None:
+    if not description_section:
         return None
 
     table_info['caption'] = description_section.find(
         'p').get_text(strip=True)
-    table_info['notes'] = notes_section.find(
-        'p').get_text(strip=True).replace('Notes.', '')
     
-    if table_info['notes'] == '':
+    if notes_section.find('p'):
+        table_info['notes'] = notes_section.find('p').get_text(strip=True).replace('Notes.', '')
+    
+    if 'notes' in table_info and table_info['notes'] == '':
         notes_text = ''
         notes = notes_section.find_all('div')
         for note in notes:

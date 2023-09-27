@@ -63,6 +63,7 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
         
         path_to_file = os.path.join(directory_name, local_file)
 
+        
         with open(path_to_file, 'w', encoding='utf-8') as file:
             file.write(content)
         
@@ -140,7 +141,7 @@ def extract_undownloaded_tables(content, title, entry):
     
     tables, _ = extract_html_tables(soup_content)
     
-    parent_index = 'astro'
+    parent_index = 'astro23'
     parent_index_id = 0
     footnotes = None
     metadata = {}
