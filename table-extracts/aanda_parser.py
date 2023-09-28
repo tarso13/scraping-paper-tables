@@ -7,8 +7,20 @@ title_to_metadata = {}
 # Search for footnotes in aanda articles
 def search_aanda_footnotes(soup_content, year):
     notes_section = None
+    footnotes_kvs = {}
+     
     if year == 2022:
         notes_section = soup_content.find('div', {'class' :'history'})
+        if notes_section:
+            footnote_divs = notes_section.find_all('div')
+            for footnote_div in footnote_divs:
+                a_tag = footnote_div.find('a')
+                if a_tag and "TFN" in a_tag['name']:
+                    footnote_split = footnote_div.get_text().split(')')
+                    footnote_split[0] = footnote_split[0].replace('(', '') 
+                    footnotes_kvs[footnote_split[0]] = footnote_split[1]
+        if footnotes_kvs: 
+            return footnotes_kvs    
     else:
         notes_section = soup_content.find('div', {'class_' :'history'})
         
@@ -16,13 +28,13 @@ def search_aanda_footnotes(soup_content, year):
         return None
     
     notes = notes_section.find('p').get_text().replace('Notes.', '').replace('Note.', '').strip()
+  
     split_notes = notes.split('^')
     split_notes.pop(0)
     for split_note in split_notes:
         split_note = f'^{split_note}'
 
     labels = notes_section.find_all('sup')
-    footnotes_kvs = {}
 
     if len(labels) > len(split_notes):
         return None 
@@ -43,7 +55,10 @@ def search_aanda_footnotes(soup_content, year):
 def search_aanda_table_info(soup_content):
     table_info = {}
     
-    notes_section = soup_content.find('div', class_='history')
+    notes_section = soup_content.find('div', {'class' :'history'})
+    if not notes_section:
+        notes_section = soup_content.find('div', {'class_' :'history'})
+        
     description_section = soup_content.find('div', id='annex')
 
     if not notes_section and description_section.find('p'):
@@ -73,18 +88,22 @@ def search_aanda_table_info(soup_content):
 def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
     if not footnotes:
         return None
-
     for footnote in footnotes:
-        footnote_constraint = '(' in footnote and ')' in footnote
         value = footnote.replace('(', '').replace(')', '').replace('^', '')
         int_footnote = value.isnumeric()
-        positive_footnote = int_footnote and int(value) > 0
-        valid_footnote = footnote_constraint or positive_footnote
+        if int_footnote and int(value) < 0:
+            continue
         for data in data_found:
-            if not valid_footnote:
-                continue
-            if footnote in data or f'^{value}' in data:
-                valid_footnotes[footnote] = footnotes[footnote]
+            detected_footnote = ''
+            if footnote in data:
+                detected_footnote = footnote
+            if f'^{value}' in data:
+                detected_footnote = f'^{value}'
+            if f'^({value})' in data:
+                detected_footnote = f'^({value})'
+            if detected_footnote != '':
+                valid_footnotes[detected_footnote] = footnotes[footnote]
+
     return valid_footnotes
 
 # Search for footnote in aanda entry and if found, add it to the json object the entry belongs to
