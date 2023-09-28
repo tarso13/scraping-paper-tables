@@ -17,6 +17,8 @@ def search_aanda_footnotes(soup_content, year):
                 a_tag = footnote_div.find('a')
                 if a_tag and "TFN" in a_tag['name']:
                     footnote_split = footnote_div.get_text().split(')')
+                    if len(footnote_split) < 2:
+                        break
                     footnote_split[0] = footnote_split[0].replace('(', '') 
                     footnotes_kvs[footnote_split[0]] = footnote_split[1]
         if footnotes_kvs: 

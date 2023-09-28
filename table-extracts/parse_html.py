@@ -165,12 +165,11 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     table_rows = table.find_all("tr")
     for tr in table_rows:
         counter += 1
-        for th in tr.find_all("th"):   
+        for th in tr.find_all('<th>'):   
             if counter > 1:
                 extra_headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
                 continue
             headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', '').replace('  ',''))
-    
     # print(headers)
 
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
@@ -223,10 +222,9 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
             valid_footnotes = validate_aanda_footnotes(
                     footnotes, valid_footnotes, headers)
         if 'IOPscience' in title:
-            valid_footnotes = footnotes
-            
-    convert_to_json_array(extra_headers, json_data, key_prefix, footnotes, journal, True)
-    
+            valid_footnotes = footnotes     
+        convert_to_json_array(extra_headers, json_data, key_prefix, footnotes, journal, True)
+   
     for row in table_rows:
         row_index = table_rows.index(row) + 1
         index = row_index 
