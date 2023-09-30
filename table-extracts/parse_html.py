@@ -166,9 +166,16 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         for th in tr.find_all('th'): 
             if '</th>' not in str(th):
                 continue
-            headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
-        if len(headers):
-            headers_as_rows.append(headers)
+            header = th.get_text().replace('\xa0', EMPTY).replace('\n', '')
+            if header == '':
+                span = th.find('span')
+                if span:
+                    img = span.find('img')
+                    if img:
+                        data = 'unparsable (img)'
+            headers.append(header)
+            if len(headers):
+                 headers_as_rows.append(headers)
     
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         table_id = identify_mnras_table_id(table)
@@ -186,15 +193,9 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     if supplementary == 'true':
         json_data['supplementary'] = 'true'
         
-    if len(headers_as_rows):
-        key_prefix = f'row1'
-        extra_metadata['headers (1)'] = headers_as_rows[0]
-        
     if len(headers_as_rows) > 1:
         for headers_as_row in headers_as_rows:
             index = headers_as_rows.index(headers_as_row) + 1
-            if index == 1:
-                continue
             key_prefix = f'row{str(index)}'
             extra_metadata[f'headers ({str(index)})'] = headers_as_row
             
@@ -238,8 +239,17 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         row_index = table_rows.index(row) + 1
         index = row_index 
         key_prefix = f'row{str(index)}'
-        data_found = list(str(td.get_text().replace('\xa0', EMPTY).replace(
-            '\n', EMPTY).replace('  ','')) for td in row.find_all("td"))
+        data_found = []
+        for td in row.find_all("td"):
+            data = str(td.get_text().replace('\xa0', EMPTY).replace(
+                '\n', EMPTY).replace('  ',''))
+            if data == '':
+                span = td.find('span')
+                if span:
+                    img = span.find('img')
+                    if img:
+                        data = 'unparsable (img)'
+            data_found.append(data)
         
         if row_index == 1:
             extra_metadata['rows'] = len(table_rows)
@@ -256,7 +266,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
                            key_prefix, valid_footnotes, journal, False)
       
         
-    write_to_json_file('json_results', f'{title}', json_data)
+    write_to_json_file('json_results_mnras', f'{title}', json_data)
     return json_data
 
 # Write json data to json file
