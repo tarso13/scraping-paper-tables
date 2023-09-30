@@ -62,7 +62,10 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
             return
         
         path_to_file = os.path.join(directory_name, local_file)
-
+        
+        if len(path_to_file) > 1000:
+            print(f'{path_to_file} wont be downloaded. Path limit exceeded')
+            return
         
         with open(path_to_file, 'w', encoding='utf-8') as file:
             file.write(content)
