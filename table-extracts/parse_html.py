@@ -158,20 +158,18 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         if 'notes' in current_table_info and current_table_info['notes'] == '':
             current_table_info.pop('notes')      
                 
-    headers = []
-    extra_headers = []
+    headers_as_rows = []
     key_prefix = ''
-    counter = 0
-    table_rows = table.find_all("tr")
+    table_rows = table.find_all('tr')
     for tr in table_rows:
-        counter += 1
-        for th in tr.find_all('<th>'):   
-            if counter > 1:
-                extra_headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
+        headers = []
+        for th in tr.find_all('th'): 
+            if '</th>' not in str(th):
                 continue
-            headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', '').replace('  ',''))
-    # print(headers)
-
+            headers.append(th.get_text().replace('\xa0', EMPTY).replace('\n', ''))
+        if len(headers):
+            headers_as_rows.append(headers)
+    
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         table_id = identify_mnras_table_id(table)
         table_suffix = f'T{table_id}'
@@ -188,16 +186,22 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     if supplementary == 'true':
         json_data['supplementary'] = 'true'
         
-    if len(headers):
+    if len(headers_as_rows):
         key_prefix = f'row1'
-        extra_metadata['headers'] = headers
+        extra_metadata['headers (1)'] = headers_as_rows[0]
         
-    if len(extra_headers):
-        key_prefix = f'row2'
-        extra_metadata['extra headers'] = extra_headers
+    if len(headers_as_rows) > 1:
+        for headers_as_row in headers_as_rows:
+            index = headers_as_rows.index(headers_as_row) + 1
+            if index == 1:
+                continue
+            key_prefix = f'row{str(index)}'
+            extra_metadata[f'headers ({str(index)})'] = headers_as_row
             
     extra_metadata['rows'] = 0
-    extra_metadata['cols'] = len(headers)
+    extra_metadata['cols'] = 0
+    if len(headers_as_rows):
+        extra_metadata['cols'] = len(list(headers_as_rows[0]))
     
     journal = ''
     valid_footnotes = {}
@@ -209,21 +213,26 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     if 'A&A' in title:
         journal = 'A&A'
         valid_footnotes = validate_aanda_footnotes(
-                footnotes, valid_footnotes, headers)
+                footnotes, valid_footnotes, headers_as_rows[0])
         
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         journal = 'mnras'
         valid_footnotes = mnras_footnotes   
         
-    convert_to_json_array(headers, json_data, f'row1', valid_footnotes, journal, True)
+    convert_to_json_array(headers_as_rows[0], json_data, f'row1', valid_footnotes, journal, True)
         
-    if len(extra_headers):
-        if 'A&A' in title:
-            valid_footnotes = validate_aanda_footnotes(
-                    footnotes, valid_footnotes, headers)
-        if 'IOPscience' in title:
-            valid_footnotes = footnotes     
-        convert_to_json_array(extra_headers, json_data, key_prefix, footnotes, journal, True)
+    if len(headers_as_rows) > 1:
+        for extra_headers in headers_as_rows:
+            index = headers_as_rows.index(extra_headers) + 1
+            if index == 1:
+                continue
+            key_prefix = f'row{str(index)}'
+            if 'A&A' in title:
+                valid_footnotes = validate_aanda_footnotes(
+                        footnotes, valid_footnotes, headers)
+            if 'IOPscience' in title:
+                valid_footnotes = footnotes     
+            convert_to_json_array(extra_headers, json_data, key_prefix, footnotes, journal, True)
    
     for row in table_rows:
         row_index = table_rows.index(row) + 1
@@ -234,11 +243,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         
         if row_index == 1:
             extra_metadata['rows'] = len(table_rows)
-            if not len(headers):    
+            if not len(headers_as_rows):    
                 extra_metadata['cols'] = len(data_found)
             include_extra_metadata_json_data(extra_metadata, metadata, json_data)
-        
-        # print(data_found)
+
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
                 footnotes, valid_footnotes, data_found)
