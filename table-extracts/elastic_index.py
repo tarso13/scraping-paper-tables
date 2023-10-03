@@ -7,7 +7,6 @@ import datetime as dt
 documents = []
 
 minimum_results = 0
-maximum_results = 2000
 
 # Read elastic password from file so as to keep it private  
 # Create a connection to Elasticsearch
@@ -45,7 +44,7 @@ def delete_an_index(index):
     
 # Create a connection to Elasticsearch
 # Search documents by title
-def search_index_by_title(index, title):
+def search_index_by_title(index, title, maximum_results=2000):
     es = establish_connection_to_index()
     
     query = {  
@@ -62,7 +61,7 @@ def search_index_by_title(index, title):
     return results
 
 # Search documents by word in their content
-def search_index_by_word_in_table(index, word):
+def search_index_by_word_in_table(index, word, maximum_results=2000):
     es = establish_connection_to_index()
     
     query = {  
@@ -80,7 +79,7 @@ def search_index_by_word_in_table(index, word):
    
 # Create a connection to Elasticsearch  
 # Search documents by brief notes on table caption
-def search_index_by_table_caption(index, content):
+def search_index_by_table_caption(index, content, maximum_results=2000):
     es = establish_connection_to_index()
     
     query = {  
@@ -101,7 +100,7 @@ def search_index_by_table_caption(index, content):
 # The journals returned have publication date greater or equal to start_date given
 # and less or equal to end_date given
 # Note: Date should be either in yyyy-mm-dd or yyyy/mm/dd format
-def search_index_by_date(index, start_date, end_date):
+def search_index_by_date(index, start_date, end_date, maximum_results=2000):
     es = establish_connection_to_index()
     
     formatted_start_date = format_date(start_date)
@@ -125,21 +124,21 @@ def search_index_by_date(index, start_date, end_date):
 
 # Create a connection to Elasticsearch
 # Search documents by year
-def search_index_by_year(index, year):
+def search_index_by_year(index, year, maximum_results=2000):
     start_date = format_date(f'{str(year)}-01-01')
     end_date = format_date(f'{str(year)}-12-31')
-    return search_index_by_date(index, start_date, end_date)
+    return search_index_by_date(index, start_date, end_date, maximum_results)
 
 # Create a connection to Elasticsearch
 # Search documents by year range
-def search_index_by_year_range(index, start_year, end_year):
+def search_index_by_year_range(index, start_year, end_year, maximum_results=2000):
     start_date = format_date(f'{str(start_year)}-01-01')
     end_date = format_date(f'{str(end_year)}-12-31')
-    return search_index_by_date(index, start_date, end_date)
+    return search_index_by_date(index, start_date, end_date, maximum_results)
     
 # Create a connection to Elasticsearch
 # Search documents by journal name
-def search_index_by_journal(index, journal):
+def search_index_by_journal(index, journal, maximum_results=2000):
     es = establish_connection_to_index()
     
     query = { 
@@ -157,7 +156,7 @@ def search_index_by_journal(index, journal):
 
 # Create a connection to Elasticsearch
 # Search documents by author name
-def search_index_by_author(index, author):
+def search_index_by_author(index, author, maximum_results=2000):
     es = establish_connection_to_index()
     
     query = {  

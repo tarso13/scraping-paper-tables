@@ -139,6 +139,8 @@ def include_extra_metadata_json_data(extra_metadata, metadata, json_data):
 def extract_table_id(title):
     pattern = r'_T\d+'  # The regular expression pattern for '_T' followed by one or more digits (\d+)
     table_ids = re.findall(pattern, title)
+    if not table_ids:
+        return None
     table_id = table_ids[0].replace('_', '')
     return table_id
 
@@ -192,13 +194,21 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     
     if supplementary == 'true':
         json_data['supplementary'] = 'true'
-        
-    if len(headers_as_rows) > 1:
+    
+    if len(headers_as_rows):
+        prev_index = 0
+        prev_headers = []
         for headers_as_row in headers_as_rows:
             index = headers_as_rows.index(headers_as_row) + 1
+            if index == prev_index or prev_headers == headers_as_row:
+                continue
+            if prev_index != 0 and index != (prev_index + 1):
+                index = prev_index + 1
             key_prefix = f'row{str(index)}'
             extra_metadata[f'headers ({str(index)})'] = headers_as_row
-            
+            prev_index = index
+            prev_headers = headers_as_row
+                     
     extra_metadata['rows'] = 0
     extra_metadata['cols'] = 0
     if len(headers_as_rows):
@@ -219,21 +229,20 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         journal = 'mnras'
         valid_footnotes = mnras_footnotes   
+
+    if headers_as_rows:   
+        convert_to_json_array(headers_as_rows[0], json_data, f'row1', valid_footnotes, journal, True)
         
-    convert_to_json_array(headers_as_rows[0], json_data, f'row1', valid_footnotes, journal, True)
-        
-    if len(headers_as_rows) > 1:
-        for extra_headers in headers_as_rows:
-            index = headers_as_rows.index(extra_headers) + 1
-            if index == 1:
-                continue
+    if len(headers_as_rows):
+        for headers_as_row in headers_as_rows:
+            index = headers_as_rows.index(headers_as_row) + 1
             key_prefix = f'row{str(index)}'
             if 'A&A' in title:
                 valid_footnotes = validate_aanda_footnotes(
                         footnotes, valid_footnotes, headers)
             if 'IOPscience' in title:
                 valid_footnotes = footnotes     
-            convert_to_json_array(extra_headers, json_data, key_prefix, footnotes, journal, True)
+            convert_to_json_array(headers_as_row, json_data, key_prefix, footnotes, journal, True)
    
     for row in table_rows:
         row_index = table_rows.index(row) + 1
@@ -266,7 +275,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
                            key_prefix, valid_footnotes, journal, False)
       
         
-    write_to_json_file('json_results_mnras', f'{title}', json_data)
+    write_to_json_file('json_results', f'{title}', json_data)
     return json_data
 
 # Write json data to json file
