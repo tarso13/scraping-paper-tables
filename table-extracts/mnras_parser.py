@@ -31,11 +31,35 @@ def extract_mnras_extra_metadata(soup_content):
 
 # Search for footnote in MNRAs list of data and if found, add it to the json object the entry belongs to
 def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
+    valid_footnotes = {}
+    pattern = r'\^([a-zA-Z])'
     for footnote in footnotes:
+        matches = re.finditer(pattern, footnotes[footnote])
+        footnotes[footnote] = footnotes[footnote].replace('Note.', '').replace('Notes.','').strip()
+        if len(list(matches)) > 1:
+            footnotes_with_values = re.split(pattern, footnotes[footnote])
+            keys = []
+            values = []
+            for footnote_with_value in footnotes_with_values:
+                index = footnotes_with_values.index(footnote_with_value)
+                if index == 0:
+                    continue
+                if index % 2 != 0:
+                    keys.append(f'^{footnote_with_value}')
+                    continue
+                values.append(footnote_with_value)
+        
+            for key in keys:
+                index = keys.index(key)
+                valid_footnotes[key] = values[index]     
+        else:
+            valid_footnotes[footnote] = footnotes[footnote]   
+             
+    for footnote in valid_footnotes:
         if footnote in data:
             updated_data = data.replace(footnote, '')
             json_obj['content'] = updated_data
-            json_obj['note'] = footnotes[footnote].replace(footnote, '').replace('Notes.', '').replace('Note.', '').strip()
+            json_obj['note'] = valid_footnotes[footnote].replace(footnote, '').replace('Notes.', '').replace('Note.', '').strip()
     
             
             
