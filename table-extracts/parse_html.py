@@ -195,9 +195,11 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     if supplementary == 'true':
         json_data['supplementary'] = 'true'
     
+    mnras_headers = []
     if len(headers_as_rows):
         prev_index = 0
         prev_headers = []
+
         for headers_as_row in headers_as_rows:
             index = headers_as_rows.index(headers_as_row) + 1
             if index == prev_index or prev_headers == headers_as_row:
@@ -206,8 +208,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
                 index = prev_index + 1
             key_prefix = f'row{str(index)}'
             extra_metadata[f'headers ({str(index)})'] = headers_as_row
+            mnras_headers.append(headers_as_row)
             prev_index = index
             prev_headers = headers_as_row
+     
                      
     extra_metadata['rows'] = 0
     extra_metadata['cols'] = 0
@@ -230,9 +234,13 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         journal = 'mnras'
         valid_footnotes = mnras_footnotes   
 
+    if journal=='mnras':
+       headers_as_rows = mnras_headers
+       
     if headers_as_rows:   
         convert_to_json_array(headers_as_rows[0], json_data, f'row1', valid_footnotes, journal, True)
-        
+
+       
     if len(headers_as_rows):
         for headers_as_row in headers_as_rows:
             index = headers_as_rows.index(headers_as_row) + 1
@@ -242,7 +250,8 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
                         footnotes, valid_footnotes, headers)
             if 'IOPscience' in title:
                 valid_footnotes = footnotes     
-            convert_to_json_array(headers_as_row, json_data, key_prefix, footnotes, journal, True)
+            valid_footnotes = mnras_footnotes
+            convert_to_json_array(headers_as_row, json_data, key_prefix, valid_footnotes, journal, True)
    
     for row in table_rows:
         row_index = table_rows.index(row) + 1

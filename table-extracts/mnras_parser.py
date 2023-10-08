@@ -32,7 +32,7 @@ def extract_mnras_extra_metadata(soup_content):
 # Search for footnote in MNRAs list of data and if found, add it to the json object the entry belongs to
 def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
     valid_footnotes = {}
-    pattern = r'\^([a-zA-Z])'
+    pattern = r'^\^[a-zA-Z]$'
     for footnote in footnotes:
         matches = re.finditer(pattern, footnotes[footnote])
         footnotes[footnote] = footnotes[footnote].replace('Note.', '').replace('Notes.','').strip()
@@ -51,7 +51,7 @@ def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
         
             for key in keys:
                 index = keys.index(key)
-                valid_footnotes[key] = values[index]     
+                valid_footnotes[key] = values[index].replace(footnote,'')    
         else:
             valid_footnotes[footnote] = footnotes[footnote]   
              
@@ -60,9 +60,8 @@ def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
             updated_data = data.replace(footnote, '')
             json_obj['content'] = updated_data
             json_obj['note'] = valid_footnotes[footnote].replace(footnote, '').replace('Notes.', '').replace('Note.', '').strip()
-    
-            
-            
+
+        
 # Identify table id in mnras journal
 def identify_mnras_table_id(table):
     table_parent_element = table.parent.parent.parent
