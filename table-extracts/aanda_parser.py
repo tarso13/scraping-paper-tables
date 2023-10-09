@@ -16,11 +16,12 @@ def search_aanda_footnotes(soup_content, year):
             for footnote_div in footnote_divs:
                 a_tag = footnote_div.find('a')
                 if a_tag and "TFN" in a_tag['name']:
-                    footnote_split = footnote_div.get_text().split(')')
-                    if len(footnote_split) < 2:
+                    footnote_split = footnote_div.find('p').get_text() #.split(')')
+                    if not footnote_div.find('sup'):
                         break
-                    footnote_split[0] = footnote_split[0].replace('(', '') 
-                    footnotes_kvs[footnote_split[0]] = footnote_split[1]
+                    else:
+                        footnote_sup = footnote_div.find('sup').get_text()
+                    footnotes_kvs[footnote_sup] = footnote_split
         if footnotes_kvs: 
             return footnotes_kvs    
     else:
@@ -40,7 +41,7 @@ def search_aanda_footnotes(soup_content, year):
 
     if len(labels) > len(split_notes):
         return None 
-    
+        
     for label in labels:
         index = labels.index(label)
         label_name = label.get_text(strip=True)
@@ -50,7 +51,6 @@ def search_aanda_footnotes(soup_content, year):
         else:
             label_text = label.find_next('p').get_text(strip=True)
         footnotes_kvs[label_name] = label_text
- 
     return footnotes_kvs
 
 # Search and extract table description and notes
@@ -127,5 +127,5 @@ def search_aanda_journal_metadata(journal):
     metadata = {}
     for aanda_file in list(title_to_metadata.keys()):
         if aanda_file.replace('.html', '') in journal:
-            metadata = title_to_metadata[aanda_file]
+            metadata = title_to_metadata[aanda_file]      
     return metadata

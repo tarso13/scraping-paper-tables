@@ -1,6 +1,7 @@
 from download_html import download_all_html_files
 from parse_html import extract_downloaded_tables
-
+from elastic_index import delete_an_index
+import os
 aanda_urls = [
     'https://www.aanda.org/articles/aa/full_html/2010/16/aa15738-10/aa15738-10.html', # CHECKED
     'https://www.aanda.org/articles/aa/full_html/2011/12/aa18034-11/aa18034-11.html', # CHECKED
@@ -49,16 +50,29 @@ urls = [
     'https://academic.oup.com/mnras/article/524/4/5060/7226714'                       # CHECKED
 ]
 
+def read_urls_from_file(filename):
+    file = open(filename, 'r')
+    urls = file.readlines()
+    urls_updated = []
+    for url in urls:
+        url = str(url).rstrip()
+        urls_updated.append(url)
+    return urls_updated
+    
 # Main function to download initial urls and extract data
 def main():
-    download_extra_files = True
-    download_all_html_files('publications', urls, download_extra_files)
-    download_all_html_files('publications', mnras_urls, download_extra_files)
-    download_all_html_files('publications', urls, download_extra_files)
+    # aanda_2022 = read_urls_from_file('res_aanda.txt')
+    # download_all_html_files('publications', aanda_2022, True)
+    # download_all_html_files('publications', mnras_urls, False)
+    # mnras_2022 = read_urls_from_file('res_mnras.txt')
+    # download_all_html_files('publications', mnras_2022, False)
     print('Start extracting process...')
-    extract_downloaded_tables('publications_mnras')
-    extract_downloaded_tables('publications_aanda')
-    extract_downloaded_tables('publications_aanda/publications_aanda_tables')
-    extract_downloaded_tables('publications_iopscience')
+           
+    # extract_downloaded_tables('publications_mnras_debug')
     
+    extract_downloaded_tables('publications_aanda')
+    print('Now extracting tables..')
+    extract_downloaded_tables('publications_aanda/publications_aanda_tables')
+    # extract_downloaded_tables('publications_iopscience')
+
 main()

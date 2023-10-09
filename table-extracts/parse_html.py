@@ -227,8 +227,9 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         
     if 'A&A' in title:
         journal = 'A&A'
-        valid_footnotes = validate_aanda_footnotes(
-                footnotes, valid_footnotes, headers_as_rows[0])
+        if len(headers_as_rows):
+            valid_footnotes = validate_aanda_footnotes(
+                    footnotes, valid_footnotes, headers_as_rows[0])
         
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         journal = 'mnras'
@@ -283,7 +284,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         convert_to_json_array(data_found, json_data,
                            key_prefix, valid_footnotes, journal, False)
       
-        
+    keys = list(json_data['metadata'].keys())
+    keys.sort()
+    json_data['metadata'] = {i: json_data['metadata'][i] for i in keys}
+    print('Writing to json file..')
     write_to_json_file('json_results', f'{title}', json_data)
     return json_data
 
@@ -325,6 +329,7 @@ def extract_downloaded_tables(directory_name):
         
         if 'A&A' in entry and 'A&A)_T' not in entry:
             title_to_metadata[entry] = extract_journal_metadata(soup_content)
+            print(title_to_metadata[entry])
             continue
         
         tables, supplements = extract_html_tables(soup_content)
@@ -359,7 +364,7 @@ def extract_downloaded_tables(directory_name):
                 mrt_indexes[mrt_title] = result
                 
         parent_index_id = 1   
-        index_parent(parent_index, parent_index_id)
+        # index_parent(parent_index, parent_index_id)
     
         for table in tables:
             title = entry.replace('.html', '')
@@ -384,11 +389,11 @@ def extract_downloaded_tables(directory_name):
                 table_info['notes'] = search_iopscience_table_notes(table)
        
             json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, supplements[index])
-            append_to_elastic_index(parent_index, doc_index_id, json_data)   
+            # append_to_elastic_index(parent_index, doc_index_id, json_data)   
         
         mrt_parent_index = 'mrt_astro'
         mrt_parent_index_id = 1
-        index_parent(mrt_parent_index, mrt_parent_index_id)
+        # index_parent(mrt_parent_index, mrt_parent_index_id)
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            append_to_elastic_index(mrt_parent_index, doc_index_id, mrt_indexes[mrt_index])
+            # append_to_elastic_index(mrt_parent_index, doc_index_id, mrt_indexes[mrt_index])

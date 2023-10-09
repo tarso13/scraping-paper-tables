@@ -96,11 +96,16 @@ def extract_bibcode_from_results(query_results, number_of_results):
 # Note: format should either be "HTML" or "PDF" (Use capital letters in order for api to work)
 def extract_url_from_bibcode(bibcode, format):
     generated_url = f'https://ui.adsabs.harvard.edu/link_gateway/{bibcode}/PUB_{format}'
-    url_results = requests.get(generated_url)
+    url_results = ''
+    try:
+        url_results = requests.get(generated_url) 
+    except:
+        if url_results == '':
+            return None
     if url_results.url == generated_url:
         print('There is no available html for this journal.') 
         return None
-    print(f'Url: {url_results.url}')
+    print(f'"{url_results.url}",')
     return url_results.url
 
 # Extract ads urls for given bibcodes and format
@@ -120,7 +125,7 @@ def extract_urls_from_bibcodes(bibcodes, format):
 # c) by journal in specific period of time
 # using the nasa/ads api
 def main():
-    number_of_results = 1000
+    number_of_results = 2000
     
     print('Searching by keyword...')
     keyword_results = search_ads_by_keyword('SNR', 'bibcode', number_of_results)
@@ -131,7 +136,7 @@ def main():
     print(journal_results)
     
     print('Searching by journal (A&A) in specific period of time...')
-    journal_time_results = search_ads_journal_by_period_of_time('A&A', 2022, 2023, 'bibcode', number_of_results)
+    journal_time_results = search_ads_journal_by_period_of_time('A&A', 2021, 2021, 'bibcode', number_of_results)
     print(journal_time_results)
     
     print('Searching by journal (MNRAS) in specific period of time...')
