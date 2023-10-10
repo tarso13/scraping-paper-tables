@@ -74,9 +74,19 @@ def search_aanda_table_info(soup_content):
     table_info['caption'] = description_section.find(
         'p').get_text(strip=True)
     
-    if notes_section.find('p'):
-        table_info['notes'] = notes_section.find('p').get_text(strip=True).replace('Notes.', '')
+    notes_element = notes_section.find('p')
+    if notes_element:
+        table_info['notes'] = notes_element.get_text(strip=True).replace('Notes.', '')
     
+    p_tags = notes_section.find_all('p')
+    for p_tag in p_tags:
+        b_tag = p_tag.find('b') 
+        if not b_tag:
+            continue
+        if 'References' in b_tag.get_text():
+            table_info['references'] = p_tag.get_text().replace(b_tag.get_text(), '')
+            break
+       
     if 'notes' in table_info and table_info['notes'] == '':
         notes_text = ''
         notes = notes_section.find_all('div')
