@@ -200,7 +200,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     if len(headers_as_rows):
         prev_index = 0
         prev_headers = []
-
+        extra_metadata[f'headers'] = {}
         for headers_as_row in headers_as_rows:
             index = headers_as_rows.index(headers_as_row) + 1
             if index == prev_index or prev_headers == headers_as_row:
@@ -208,7 +208,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
             if prev_index != 0 and index != (prev_index + 1):
                 index = prev_index + 1
             key_prefix = f'row{str(index)}'
-            extra_metadata[f'headers ({str(index)})'] = headers_as_row
+            extra_metadata[f'headers'][str(index)] = headers_as_row
             mnras_headers.append(headers_as_row)
             prev_index = index
             prev_headers = headers_as_row
