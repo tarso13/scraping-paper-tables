@@ -7,7 +7,7 @@ from iopscience_parser import *
 from mnras_parser import *
 from datetime import datetime
 
-doc_index_id = 0 
+doc_index_id = 0
 
 # List containing the html files with tables that have been extracted
 files_extracted = []
@@ -32,7 +32,7 @@ def replace_sup_tags(soup_content):
         if not sup_tag.contents or not sup_tag.contents[0].string:
             continue
         sup_tag.contents[0].string.replace_with(f'^{sup_text}')
-         
+
     return soup_content
 
 # Include '_' in sub tags text indicating subscripts
@@ -47,11 +47,11 @@ def replace_sub_tags(soup_content):
             sub_tag.contents[0].string.replace('', f'_{sub_text}')
         else:
             sub_tag.contents[0].string.replace_with(f'_{sub_text}')
-         
+
     return soup_content
 
 # Extract all tables from html file provided in html form and extra footnotes for journals
-# Also replace sup and sub tags representing actual values 
+# Also replace sup and sub tags representing actual values
 def extract_html_tables(soup_content):
     supplements = []
     updated_soup = replace_sup_tags(soup_content)
@@ -61,7 +61,8 @@ def extract_html_tables(soup_content):
         parent_element = table.parent
         if 'Only a portion of ' in parent_element.get_text():
             supplements.append('true')
-        else: supplements.append('false')
+        else:
+            supplements.append('false')
     return tables, supplements
 
 
@@ -99,11 +100,12 @@ def footnote_to_json_object(journal, footnotes, entry, json_obj, key_prefix):
     if journal == 'A&A':
         search_and_add_aanda_footnote_to_obj(footnotes, entry, json_obj)
     if journal == 'IOPscience':
-        search_and_add_iopscience_footnote_to_obj(footnotes, entry, json_obj, key_prefix)
+        search_and_add_iopscience_footnote_to_obj(
+            footnotes, entry, json_obj, key_prefix)
     if journal == 'mnras':
         search_and_add_mnras_footnote_to_obj(footnotes, entry, json_obj)
     return json_obj
-        
+
 # Convert list of data extracted from table to json array
 def convert_to_json_array(list, json_data, key_prefix, footnotes, journal, header):
     if len(list) == 0:
@@ -112,12 +114,13 @@ def convert_to_json_array(list, json_data, key_prefix, footnotes, journal, heade
     counter = 1
     for entry in list:
         json_obj = {}
-        index = f'col{str(counter)}'    
-        json_obj[index] = {'content' : str(entry)}
+        index = f'col{str(counter)}'
+        json_obj[index] = {'content': str(entry)}
         if header == True:
             json_obj[index]['header'] = 'true'
         if footnotes:
-            footnote_to_json_object(journal, footnotes, entry, json_obj[index], key_prefix)
+            footnote_to_json_object(
+                journal, footnotes, entry, json_obj[index], key_prefix)
 
         json_objects.append(json_obj)
         counter += 1
@@ -139,7 +142,8 @@ def include_extra_metadata_json_data(extra_metadata, metadata, json_data):
 
 # Extract table id from title using regex
 def extract_table_id(title):
-    pattern = r'_T\d+'  # The regular expression pattern for '_T' followed by one or more digits (\d+)
+    # The regular expression pattern for '_T' followed by one or more digits (\d+)
+    pattern = r'_T\d+'
     table_ids = re.findall(pattern, title)
     if not table_ids:
         return None
@@ -150,13 +154,13 @@ def extract_table_id(title):
 def reorganise_headers_as_rows(headers_as_rows, empty_row_cell):
     if len(headers_as_rows) < 1:
         return headers_as_rows
-    for i in range (0, len(headers_as_rows)):
+    for i in range(0, len(headers_as_rows)):
         index = i
         if index not in empty_row_cell:
             continue
         reorganised_next_row = ['']*len(headers_as_rows[index])
         if len(empty_row_cell[index]):
-            for i in range (0, len(headers_as_rows[index])):
+            for i in range(0, len(headers_as_rows[index])):
                 if i in empty_row_cell[index]:
                     continue
                 else:
@@ -166,7 +170,7 @@ def reorganise_headers_as_rows(headers_as_rows, empty_row_cell):
                     headers_as_rows[index + 1] = current_next_row
             headers_as_rows[index + 1] = reorganised_next_row
     return headers_as_rows
-            
+
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
@@ -177,12 +181,12 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
 
     if 'A&A' in title:
         current_table_info = table_info
-        
+
     if 'IOPscience' in title:
         current_table_info = table_info
         if 'notes' in current_table_info and current_table_info['notes'] == '':
-            current_table_info.pop('notes')      
-                
+            current_table_info.pop('notes')
+
     headers_as_rows = []
     key_prefix = ''
     table_rows = table.find_all('tr')
@@ -192,7 +196,7 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         index = table_rows.index(tr)
         empty_row_cell[index] = []
         ths = tr.find_all('th')
-        for th in ths: 
+        for th in ths:
             col_index = ths.index(th)
             if '</th>' not in str(th):
                 continue
@@ -210,8 +214,9 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
             headers.append(header)
         if len(headers) and headers not in headers_as_rows:
             headers_as_rows.append(headers)
-    headers_as_rows = reorganise_headers_as_rows(headers_as_rows, empty_row_cell)        
-                    
+    headers_as_rows = reorganise_headers_as_rows(
+        headers_as_rows, empty_row_cell)
+
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         table_id = identify_mnras_table_id(table)
         table_suffix = f'T{table_id}'
@@ -223,12 +228,12 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         table_id = extract_table_id(title)
         metadata['title'] = title.replace('_',  ' ').replace(table_id, '')
         metadata['table id'] = table_id
-    
+
     table_info_to_json_data(metadata, current_table_info, json_data)
-    
+
     if supplementary == 'true':
         json_data['supplementary'] = 'true'
-    
+
     mnras_headers = []
     if len(headers_as_rows):
         prev_index = 0
@@ -245,71 +250,82 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
             mnras_headers.append(headers_as_row)
             prev_index = index
             prev_headers = headers_as_row
-     
-                     
+
     extra_metadata['rows'] = 0
     extra_metadata['cols'] = 0
     if len(headers_as_rows):
         extra_metadata['cols'] = len(list(headers_as_rows[0]))
-    
+
     journal = ''
     valid_footnotes = {}
- 
+
     if 'IOPscience' in title:
         journal = 'IOPscience'
         valid_footnotes = footnotes
-        
+
     if 'A&A' in title:
         journal = 'A&A'
         if len(headers_as_rows):
             valid_footnotes = validate_aanda_footnotes(
-                    footnotes, valid_footnotes, headers_as_rows[0])
-        
+                footnotes, valid_footnotes, headers_as_rows[0])
+
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         journal = 'mnras'
-        valid_footnotes = mnras_footnotes   
+        valid_footnotes = mnras_footnotes
 
-    if journal=='mnras':
-       headers_as_rows = mnras_headers
-       
-    if headers_as_rows:   
-        convert_to_json_array(headers_as_rows[0], json_data, f'row1', valid_footnotes, journal, True)
+    if journal == 'mnras':
+        headers_as_rows = mnras_headers
 
-       
+    if headers_as_rows:
+        convert_to_json_array(
+            headers_as_rows[0], json_data, f'row1', valid_footnotes, journal, True)
+
     if len(headers_as_rows):
         for headers_as_row in headers_as_rows:
             index = headers_as_rows.index(headers_as_row) + 1
             key_prefix = f'row{str(index)}'
             if 'A&A' in title:
                 valid_footnotes = validate_aanda_footnotes(
-                        footnotes, valid_footnotes, headers)
+                    footnotes, valid_footnotes, headers)
             if 'IOPscience' in title:
-                valid_footnotes = footnotes    
-            
+                valid_footnotes = footnotes
+
             valid_footnotes = mnras_footnotes
-            convert_to_json_array(headers_as_row, json_data, key_prefix, valid_footnotes, journal, True)
-   
+            convert_to_json_array(headers_as_row, json_data,
+                                  key_prefix, valid_footnotes, journal, True)
+    cell_to_add = {}
     for row in table_rows:
         row_index = table_rows.index(row) + 1
-        index = row_index 
+        index = row_index
         key_prefix = f'row{str(index)}'
         data_found = []
-        for td in row.find_all("td"):
+        tds = row.find_all("td")
+        for td in tds:
             data = str(td.get_text().replace('\xa0', EMPTY).replace(
-                '\n', EMPTY).replace('  ',''))
+                '\n', EMPTY).replace('  ', ''))
+            col_index = tds.index(td)
+            if 'rowspan="2"' in str(td):
+                cell_to_add[index + 1] = [str(col_index), data]
+
+            if index in cell_to_add and str(col_index) in cell_to_add[index]:
+                data = cell_to_add[index][1]
+
             if data == '':
                 span = td.find('span')
                 if span:
                     img = span.find('img')
                     if img:
                         data = 'unparsable (img)'
+
             data_found.append(data)
-        
+
         if row_index == 1:
             extra_metadata['rows'] = len(table_rows)
-            if not len(headers_as_rows):    
+            if not len(headers_as_rows):
                 extra_metadata['cols'] = len(data_found)
-            include_extra_metadata_json_data(extra_metadata, metadata, json_data)
+
+            include_extra_metadata_json_data(
+                extra_metadata, metadata, json_data)
 
         if 'A&A' in title:
             valid_footnotes = validate_aanda_footnotes(
@@ -317,12 +333,12 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
         if 'IOPscience' in title:
             valid_footnotes = footnotes
         convert_to_json_array(data_found, json_data,
-                           key_prefix, valid_footnotes, journal, False)
-      
+                              key_prefix, valid_footnotes, journal, False)
+
     keys = list(json_data['metadata'].keys())
     keys.sort()
     json_data['metadata'] = {i: json_data['metadata'][i] for i in keys}
-    
+
     write_to_json_file('json_results', f'{title}', json_data)
     return json_data
 
@@ -334,18 +350,18 @@ def write_to_json_file(directory_name, title, json_data):
         os.mkdir(directory_name)
     path_to_json = os.path.join(directory_name, f'{title}.json')
     file = open(path_to_json, 'w', encoding='utf-8')
-    file.write(json.dumps(json_data, indent = 1))
+    file.write(json.dumps(json_data, indent=1))
 
 # Append document to actions in order to update the parent elastic index
 def append_to_elastic_index(parent_index, doc_index_id, content):
     add_document_to_index(parent_index, doc_index_id, content)
-    
+
 # Extract all table data found in html files in given directory and print them
 def extract_downloaded_tables(directory_name):
     if os.path.exists(directory_name) == False:
         return
     parent_index = ''
-    
+
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
         # os.listdir returns both directories and files included in diretory given
@@ -359,13 +375,13 @@ def extract_downloaded_tables(directory_name):
 
         print("\nResults for " + entry)
         entry_content = get_file_content(path_to_entry)
-   
+
         soup_content = BeautifulSoup(entry_content, 'html.parser')
-        
+
         if 'A&A' in entry and 'A&A)_T' not in entry:
             title_to_metadata[entry] = extract_journal_metadata(soup_content)
             continue
-        
+
         tables, supplements = extract_html_tables(soup_content)
 
         parent_index = 'astro23'
@@ -374,44 +390,46 @@ def extract_downloaded_tables(directory_name):
         metadata = {}
         extra_metadata = {}
         table_info = {}
-        
+
         if 'Captcha' in entry:
             continue
-        
+
         if 'A&A' in entry:
             metadata = search_aanda_journal_metadata(entry)
             d = dt.datetime.strptime(metadata['date'], "%Y-%m-%d")
             year = d.year
-            footnotes =  search_aanda_footnotes(soup_content, year)
+            footnotes = search_aanda_footnotes(soup_content, year)
             table_info = search_aanda_table_info(soup_content)
-           
+
         mrt_indexes = {}
-        
+
         if 'IOPscience' in entry:
             metadata = extract_journal_metadata(soup_content)
-           
-            mrt_titles, json_results = extract_iopscience_mrt_tables(soup_content, 'iopscience_mrts')
+
+            mrt_titles, json_results = extract_iopscience_mrt_tables(
+                soup_content, 'iopscience_mrts')
             for result in json_results:
                 index = json_results.index(result)
                 mrt_title = mrt_titles[index]
                 write_to_json_file('json_mrts', mrt_title, result)
                 mrt_indexes[mrt_title] = result
-                
-        parent_index_id = 1   
+
+        parent_index_id = 1
         index_parent(parent_index, parent_index_id)
-    
+
         for table in tables:
             title = entry.replace('.html', '')
 
             index = tables.index(table)
             if 'IOPscience' in title:
                 title += f'_T{str(index + 1)}'
-                
-            global doc_index_id 
+
+            global doc_index_id
             doc_index_id += 1
 
             if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
-                date, journal, authors, journal_title = extract_mnras_extra_metadata(soup_content)
+                date, journal, authors, journal_title = extract_mnras_extra_metadata(
+                    soup_content)
                 if not date or not journal or not authors or not title:
                     metadata = extract_journal_metadata(soup_content)
                 metadata['journal'] = journal
@@ -420,16 +438,18 @@ def extract_downloaded_tables(directory_name):
                 metadata['date'] = formatted_date
                 metadata['authors'] = authors
             if 'IOPscience' in title:
-                footnotes =  search_iopscience_footnotes(table, table_info)
+                footnotes = search_iopscience_footnotes(table, table_info)
                 table_info['caption'] = search_iopscience_table_caption(table)
                 table_info['notes'] = search_iopscience_table_notes(table)
-       
-            json_data = extract_table_data(table, title, footnotes, metadata, extra_metadata, table_info, supplements[index])
-            append_to_elastic_index(parent_index, doc_index_id, json_data)   
-        
+
+            json_data = extract_table_data(
+                table, title, footnotes, metadata, extra_metadata, table_info, supplements[index])
+            append_to_elastic_index(parent_index, doc_index_id, json_data)
+
         mrt_parent_index = 'mrt_astro23'
         mrt_parent_index_id = 1
         index_parent(mrt_parent_index, mrt_parent_index_id)
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            append_to_elastic_index(mrt_parent_index, doc_index_id, mrt_indexes[mrt_index])
+            append_to_elastic_index(
+                mrt_parent_index, doc_index_id, mrt_indexes[mrt_index])
