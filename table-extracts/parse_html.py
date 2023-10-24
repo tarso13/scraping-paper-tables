@@ -131,11 +131,13 @@ def table_info_to_json_data(metadata, table_info, json_data):
     json_data['metadata'] = metadata
     json_data['table info'] = table_info
 
+# Add extra metadata in json data for a table
 def include_extra_metadata_json_data(extra_metadata, metadata, json_data):
     for key in extra_metadata:
         metadata[key] = extra_metadata[key]
     json_data['metadata'] = metadata
 
+# Extract table id from title using regex
 def extract_table_id(title):
     pattern = r'_T\d+'  # The regular expression pattern for '_T' followed by one or more digits (\d+)
     table_ids = re.findall(pattern, title)
@@ -144,6 +146,27 @@ def extract_table_id(title):
     table_id = table_ids[0].replace('_', '')
     return table_id
 
+# Reorganise headers in a way that empty cells are identified and handled correctly
+def reorganise_headers_as_rows(headers_as_rows, empty_row_cell):
+    if len(headers_as_rows) < 1:
+        return headers_as_rows
+    for i in range (0, len(headers_as_rows)):
+        index = i
+        if index not in empty_row_cell:
+            continue
+        reorganised_next_row = ['']*len(headers_as_rows[index])
+        if len(empty_row_cell[index]):
+            for i in range (0, len(headers_as_rows[index])):
+                if i in empty_row_cell[index]:
+                    continue
+                else:
+                    current_next_row = headers_as_rows[index + 1]
+                    reorganised_next_row[i] = current_next_row[0]
+                    current_next_row.pop(0)
+                    headers_as_rows[index + 1] = current_next_row
+            headers_as_rows[index + 1] = reorganised_next_row
+    return headers_as_rows
+            
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
 # All row data extracted are printed as lists
@@ -163,12 +186,21 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
     headers_as_rows = []
     key_prefix = ''
     table_rows = table.find_all('tr')
+    empty_row_cell = {}
     for tr in table_rows:
         headers = []
-        for th in tr.find_all('th'): 
+        index = table_rows.index(tr)
+        empty_row_cell[index] = []
+        ths = tr.find_all('th')
+        for th in ths: 
+            col_index = ths.index(th)
             if '</th>' not in str(th):
                 continue
-            header = th.get_text().replace('\xa0', EMPTY).replace('\n', '')
+            if 'rowspan="2"' in str(th):
+                empty_row_cell[index].append(col_index)
+            text = th.get_text().replace('\xa0', EMPTY).replace('\n', '').strip()
+            header = re.sub(r'\s+', ' ', text)
+            header = re.sub(r'\s+\.', '.', header)
             if header == '':
                 span = th.find('span')
                 if span:
@@ -176,9 +208,10 @@ def extract_table_data(table, title, footnotes, metadata, extra_metadata, table_
                     if img:
                         data = 'unparsable (img)'
             headers.append(header)
-            if len(headers):
-                 headers_as_rows.append(headers)
-    
+        if len(headers) and headers not in headers_as_rows:
+            headers_as_rows.append(headers)
+    headers_as_rows = reorganise_headers_as_rows(headers_as_rows, empty_row_cell)        
+                    
     if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
         table_id = identify_mnras_table_id(table)
         table_suffix = f'T{table_id}'
