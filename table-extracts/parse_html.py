@@ -378,9 +378,11 @@ def extract_downloaded_tables(directory_name):
             doc_index_id += 1
 
             if 'Monthly_Notices_of_the_Royal_Astronomical_Society' in title:
-                date, journal, authors = extract_mnras_extra_metadata(soup_content)
+                date, journal, authors, journal_title = extract_mnras_extra_metadata(soup_content)
+                if not date or not journal or not authors or not title:
+                    metadata = extract_journal_metadata(soup_content)
                 metadata['journal'] = journal
-                metadata['title'] = title.replace('_', ' ')
+                metadata['title'] = journal_title.replace('_', ' ')
                 formatted_date = format_date(date)
                 metadata['date'] = formatted_date
                 metadata['authors'] = authors

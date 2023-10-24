@@ -26,8 +26,9 @@ def extract_mnras_extra_metadata(soup_content):
         journal = json_data["siteid"]
         authors_string = json_data["authors"]
         authors = authors_string.split(',')
-        return date, journal, authors
-    return None, None, None
+        title = json_data["full_title"]
+        return date, journal, authors, title
+    return None, None, None, None
 
 # Search for footnote in MNRAs list of data and if found, add it to the json object the entry belongs to
 def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
