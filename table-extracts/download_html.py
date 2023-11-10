@@ -15,6 +15,7 @@ from tldextract import extract
 from urllib.parse import urlparse
 import os
 import requests
+import re
 
 # Headers to be used when retrieving urls
 headers = {
@@ -69,17 +70,6 @@ def fetch_title(html_content):
     return soup.title.string
 
 
-# Set up title for saved html
-# Ignore spaces and invalid characters
-def setup_title(title):
-    title_no_spaces_list = str(title).replace(" ", "_")
-    title_no_spaces = ""
-    for word in title_no_spaces_list:
-        if word not in invalid_characters_as_words:
-            title_no_spaces += word
-    return title_no_spaces
-
-
 # Download url provided and save it locally (html file)
 # The directory to save the file is provided
 # The name of the file is the new title generated from the title provided
@@ -90,9 +80,16 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
         print("Downloading " + url)
         response = requests.get(url, headers=headers)
         content = response.text
-        new_title = setup_title(fetch_title(content))
-        if "iopscience" in directory_name and "IOPscience" not in new_title:
-            new_title = f"{new_title}_IOPscience"
+        new_title = None
+        doi = get_doi(content)
+        if "aanda" in directory_name:
+            new_title = f"{doi}_A&A"
+
+        if "mnras" in directory_name:
+            new_title = f"{doi}_MNRAS"
+
+        # if "iopscience" in directory_name:
+        #     new_title = f"{doi}_IOPscience"
 
         local_file = f"{new_title}{suffix}.html"
 
@@ -102,16 +99,10 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
 
         path_to_file = os.path.join(directory_name, local_file)
 
-        if len(path_to_file) > 200:
-            path_to_file = path_to_file[0:100] + ".html"
-            print("Big filename detected, renaming...")
-            # print(f'{path_to_file} wont be downloaded. Path limit exceeded')
-            # return
-
         with open(path_to_file, "w", encoding="utf-8") as file:
             file.write(content)
 
-        if "A&A" in local_file and "A&A)_T" not in local_file:
+        if "A&A" in local_file and "A&A_T" not in local_file:
             path_to_extra_file = (
                 f"{os.path.join(directory_name, directory_name)}_tables"
             )
@@ -154,6 +145,50 @@ def domain(html_content):
     return domain
 
 
+def get_doi(html_content):
+    doi = None
+    soup = BeautifulSoup(html_content, "html.parser")
+    metas = soup.find_all("meta")
+    metadata = {}
+    authors = []
+    for meta in metas:
+        content = meta.get("content")
+        name = meta.get("name")
+        match name:
+            case "citation_doi":
+                doi = content
+                break
+    if not doi:
+        script_tags = soup.find_all("script")
+        for script_tag in script_tags:
+            text = script_tag.get_text()
+            if not text:
+                continue
+            if "var dataLayer" in text:
+                break
+
+        json_match = re.search(r"\[{.*}\];", text)
+        if json_match:
+            json_data = json_match.group()
+
+            json_data = (
+                json_data.replace("[", "")
+                .replace(
+                    "]",
+                    "",
+                )
+                .replace(";", "")
+            )
+            json_data = json.loads(json_data)
+            doi = json_data["doi"]
+    if not doi:
+        doi = soup.find(id="metrics-tabs")["data-doi"]
+
+    doi = doi.replace(".", "_").replace("/", "__")
+
+    return doi
+
+
 # Find extra table files from initial aanda papers and download them
 def aanda_download_extra_files(
     content, directory_name, downloaded_files, download_extra_files
@@ -162,8 +197,8 @@ def aanda_download_extra_files(
     table_classes = soup.findAll("div", {"class": "ligne"})
     url_suffixes = {}
     domain_found = domain(content)
-    title = setup_title(fetch_title(content))
     title_to_metadata[title] = extract_journal_metadata(soup)
+    doi = get_doi(content)
     for table_class in table_classes:
         path_to_table = table_class.find("a")["href"]
         full_path = f"https://{domain_found}{path_to_table}"
@@ -171,9 +206,9 @@ def aanda_download_extra_files(
         if not download_extra_files:
             response = requests.get(full_path, headers=headers)
             content = response.text
-            extract_undownloaded_tables(content, f"{title}{suffix}", title)
+            extract_undownloaded_tables(content, f"{doi}{suffix}", title)
             continue
-        html_local_path = f"{title}{suffix}.html"
+        html_local_path = f"{doi}{suffix}.html"
         url_suffixes[full_path] = suffix
 
         if html_local_path in downloaded_files:

@@ -72,8 +72,8 @@ def extract_html_tables(soup_content):
 
 # Search journal metadata (authors, title, date, journal) and return a map with the values (in json format)
 def search_metadata(soup_content):
-    metas = soup_content.find_all("meta")
     metadata = {}
+    metas = soup_content.find_all("meta")
     authors = []
     for meta in metas:
         content = meta.get("content")
@@ -247,7 +247,7 @@ def extract_table_data(
             headers_as_rows.append(headers)
     headers_as_rows = reorganise_headers_as_rows(headers_as_rows, empty_row_cell)
 
-    if "Monthly_Notices_of_the_Royal_Astronomical_Society" in title:
+    if "MNRAS" in title:
         table_id = identify_mnras_table_id(table)
         table_suffix = f"T{table_id}"
         if f"_{table_suffix}" not in title:
@@ -256,7 +256,6 @@ def extract_table_data(
         current_table_info = search_mnras_table_info_and_footnotes(table)
     else:
         table_id = extract_table_id(title)
-        metadata["paper_title"] = title.replace("_", " ").replace(table_id, "")
         metadata["table_id"] = table_id
 
     table_info_to_json_data(metadata, current_table_info, json_data)
@@ -300,7 +299,7 @@ def extract_table_data(
                 footnotes, valid_footnotes, headers_as_rows[0]
             )
 
-    if "Monthly_Notices_of_the_Royal_Astronomical_Society" in title:
+    if "MNRAS" in title:
         journal = "mnras"
         valid_footnotes = mnras_footnotes
 
@@ -421,7 +420,7 @@ def extract_downloaded_tables(directory_name):
 
         soup_content = BeautifulSoup(entry_content, "html.parser")
 
-        if "A&A" in entry and "A&A)_T" not in entry:
+        if "A&A" in entry and "A&A_T" not in entry:
             title_to_metadata[entry] = extract_journal_metadata(soup_content)
             continue
 
@@ -471,7 +470,7 @@ def extract_downloaded_tables(directory_name):
             global doc_index_id
             doc_index_id += 1
             metadata["retrieval_date"] = str(date.today())
-            if "Monthly_Notices_of_the_Royal_Astronomical_Society" in title:
+            if "MNRAS" in title:
                 (
                     publication_date,
                     journal,
@@ -480,7 +479,6 @@ def extract_downloaded_tables(directory_name):
                     doi,
                 ) = extract_mnras_extra_metadata(soup_content)
                 metadata["journal"] = journal
-                metadata["paper_title"] = journal_title.replace("_", " ")
                 formatted_date = format_date(publication_date)
                 metadata["date"] = formatted_date
                 metadata["authors"] = authors
