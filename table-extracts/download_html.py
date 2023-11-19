@@ -1,4 +1,9 @@
 from bs4 import BeautifulSoup
+import json
+from lxml import html
+import time
+import random
+
 from parse_html import (
     extract_table_data,
     extract_journal_metadata,
@@ -77,19 +82,21 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
     try:
         create_directory(directory_name)
         downloaded_files = os.listdir(directory_name)
+        time.sleep(random.randint(1, 3))
         print("Downloading " + url)
         response = requests.get(url, headers=headers)
         content = response.text
         new_title = None
         doi = get_doi(content)
+
         if "aanda" in directory_name:
             new_title = f"{doi}_A&A"
 
         if "mnras" in directory_name:
             new_title = f"{doi}_MNRAS"
 
-        # if "iopscience" in directory_name:
-        #     new_title = f"{doi}_IOPscience"
+        if "iopscience" in directory_name:
+            new_title = f"{doi}_IOPscience"
 
         local_file = f"{new_title}{suffix}.html"
 
@@ -140,7 +147,7 @@ def table_suffix(path_to_table):
 def domain(html_content):
     soup = BeautifulSoup(html_content, "html.parser")
     base = soup.find("base")
-    base_href = base["href"]
+    base_href = base.get("href")
     domain = urlparse(base_href).netloc
     return domain
 
@@ -148,45 +155,50 @@ def domain(html_content):
 def get_doi(html_content):
     doi = None
     soup = BeautifulSoup(html_content, "html.parser")
-    metas = soup.find_all("meta")
+    meta_doi = soup.find("meta", {"name": "citation_doi"})
     metadata = {}
     authors = []
-    for meta in metas:
-        content = meta.get("content")
-        name = meta.get("name")
-        match name:
-            case "citation_doi":
-                doi = content
-                break
-    if not doi:
-        script_tags = soup.find_all("script")
-        for script_tag in script_tags:
-            text = script_tag.get_text()
-            if not text:
-                continue
-            if "var dataLayer" in text:
-                break
+    text = ""
+    if meta_doi:
+        doi = meta_doi.get("content")
+        doi = doi.replace(".", "_").replace("/", "__")
+        return doi
 
-        json_match = re.search(r"\[{.*}\];", text)
-        if json_match:
-            json_data = json_match.group()
+    script_tags = soup.find_all("script")
+    for script_tag in script_tags:
+        text = script_tag.get_text()
+        if not text:
+            continue
+        if "var dataLayer" in text:
+            break
 
-            json_data = (
-                json_data.replace("[", "")
-                .replace(
-                    "]",
-                    "",
-                )
-                .replace(";", "")
+    json_match = re.search(r"\[{.*}\];", text)
+    if json_match:
+        json_data = json_match.group()
+
+        json_data = (
+            json_data.replace("[", "")
+            .replace(
+                "]",
+                "",
             )
-            json_data = json.loads(json_data)
-            doi = json_data["doi"]
-    if not doi:
-        doi = soup.find(id="metrics-tabs")["data-doi"]
+            .replace(";", "")
+        )
+        json_data = json.loads(json_data)
+        doi = json_data["doi"]
+    if doi:
+        return doi.replace(".", "_").replace("/", "__")
+    metrics_element = soup.find("div", {"id": "metrics-tabs"})
+    if metrics_element:
+        doi = metrics_element.get("data-doi")
+        return doi.replace(".", "_").replace("/", "__")
 
-    doi = doi.replace(".", "_").replace("/", "__")
+    altmetric_element = soup.find("div", {"class": "altmetric-embed"})
+    if altmetric_element:
+        doi = altmetric_element.get("data-doi")
+        return doi.replace(".", "_").replace("/", "__")
 
-    return doi
+    return None
 
 
 # Find extra table files from initial aanda papers and download them
@@ -197,8 +209,8 @@ def aanda_download_extra_files(
     table_classes = soup.findAll("div", {"class": "ligne"})
     url_suffixes = {}
     domain_found = domain(content)
-    title_to_metadata[title] = extract_journal_metadata(soup)
     doi = get_doi(content)
+    title_to_metadata[doi] = extract_journal_metadata(soup)
     for table_class in table_classes:
         path_to_table = table_class.find("a")["href"]
         full_path = f"https://{domain_found}{path_to_table}"
@@ -206,7 +218,7 @@ def aanda_download_extra_files(
         if not download_extra_files:
             response = requests.get(full_path, headers=headers)
             content = response.text
-            extract_undownloaded_tables(content, f"{doi}{suffix}", title)
+            extract_undownloaded_tables(content, f"{doi}{suffix}", doi)
             continue
         html_local_path = f"{doi}{suffix}.html"
         url_suffixes[full_path] = suffix
