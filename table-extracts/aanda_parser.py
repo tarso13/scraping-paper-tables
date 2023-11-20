@@ -114,6 +114,8 @@ def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
             continue
         for data in data_found:
             detected_footnote = ""
+            if not data:
+                continue
             if footnote in data:
                 detected_footnote = footnote
             if f"^{value}" in data:

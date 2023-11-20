@@ -185,9 +185,10 @@ def reorganise_headers_as_rows(headers_as_rows, empty_row_cell):
                     continue
                 else:
                     current_next_row = headers_as_rows[index + 1]
-                    reorganised_next_row[i] = current_next_row[0]
-                    current_next_row.pop(0)
-                    headers_as_rows[index + 1] = current_next_row
+                    if len(current_next_row):
+                        reorganised_next_row[i] = current_next_row[0]
+                        current_next_row.pop(0)
+                        headers_as_rows[index + 1] = current_next_row
             headers_as_rows[index + 1] = reorganised_next_row
     return headers_as_rows
 
@@ -234,11 +235,9 @@ def extract_table_data(
                     img = span.find("img")
                     if img:
                         data = "unparsable (img)"
-            try:
+            if header:
                 if header[-1] == ".":
-                    header[-1] = ""
-            except:
-                pass
+                    header = header[:-1]
 
             if header == " " or header == "":
                 header = None
@@ -249,6 +248,8 @@ def extract_table_data(
 
     if "MNRAS" in title:
         table_id = identify_mnras_table_id(table)
+        if table_id == -1:
+            return
         table_suffix = f"T{table_id}"
         if f"_{table_suffix}" not in title:
             title += f"_{table_suffix}"
@@ -353,8 +354,13 @@ def extract_table_data(
                     img = span.find("img")
                     if img:
                         data = "unparsable (img)"
-            if data == " ":
-                data = None
+            if data:
+                if data[-1] == ".":
+                    data = data[:-1]
+
+                if data == " ":
+                    data = None
+
             data_found.append(data)
 
         if row_index == 1:
@@ -406,6 +412,7 @@ def extract_downloaded_tables(directory_name):
 
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
+        print("Extracting " + entry)
         # os.listdir returns both directories and files included in diretory given
         if os.path.isfile(path_to_entry) == False:
             continue
@@ -438,6 +445,9 @@ def extract_downloaded_tables(directory_name):
 
         if "A&A" in entry:
             metadata = search_aanda_journal_metadata(entry)
+            if not metadata:
+                os.remove(path_to_entry)
+                continue
             d = dt.datetime.strptime(metadata["date"], "%Y-%m-%d")
             year = d.year
             footnotes = search_aanda_footnotes(soup_content, year)
@@ -458,7 +468,7 @@ def extract_downloaded_tables(directory_name):
                 mrt_indexes[mrt_title] = result
 
         parent_index_id = 1
-        index_parent(parent_index, parent_index_id)
+        # index_parent(parent_index, parent_index_id)
 
         for table in tables:
             title = entry.replace(".html", "")
@@ -506,13 +516,13 @@ def extract_downloaded_tables(directory_name):
                 table_info,
                 supplements[index],
             )
-            append_to_elastic_index(parent_index, doc_index_id, json_data)
+            # append_to_elastic_index(parent_index, doc_index_id, json_data)
 
         mrt_parent_index = "mrt_astro23"
         mrt_parent_index_id = 1
-        index_parent(mrt_parent_index, mrt_parent_index_id)
+        # index_parent(mrt_parent_index, mrt_parent_index_id)
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            append_to_elastic_index(
-                mrt_parent_index, doc_index_id, mrt_indexes[mrt_index]
-            )
+            # append_to_elastic_index(
+            #     mrt_parent_index, doc_index_id, mrt_indexes[mrt_index]
+            # )
