@@ -1,0 +1,37 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: url('https://c1.wallpaperflare.com/path/278/988/956/earth-globe-moon-world-bcfb5908b965d2054d05e625bc4e309c.jpg') no-repeat center center fixed;
+    background-size: cover;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+}
+
+.container {
+    max-width: 800px;
+    margin: 50px auto;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2.5em;
+    color: aliceblue;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+p {
+    margin-top: 32%;
+    font-size: 1.5em;
+    color: aliceblue;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.result-container {
+    width: 47%;
+    height: 50%;
+    border: 3px solid rgb(46, 35, 53);
+    box-shadow: 9px 6px 4px #150c1a;
+    color: aliceblue;
+    padding-bottom: 10%;
+    position: fixed;
+}

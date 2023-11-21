@@ -26,7 +26,14 @@ async def favicon():
 
 
 @app.get("/search", response_class=HTMLResponse)
-async def search(search_type: str):
-    return HTMLResponse(
-        content=f"Searching by {search_type} is not available yet.", status_code=200
+async def search(request: Request, search_type: str):
+    return templates.TemplateResponse(
+        "query.html", {"request": request, "search_type": search_type}
+    )
+
+
+@app.get("/query", response_class=HTMLResponse)
+async def query(request: Request, input_search: str):
+    return templates.TemplateResponse(
+        "result.html", {"request": request, "input_search": input_search}
     )

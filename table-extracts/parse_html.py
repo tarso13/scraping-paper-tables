@@ -412,7 +412,6 @@ def extract_downloaded_tables(directory_name):
 
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
-        print("Extracting " + entry)
         # os.listdir returns both directories and files included in diretory given
         if os.path.isfile(path_to_entry) == False:
             continue
@@ -468,7 +467,7 @@ def extract_downloaded_tables(directory_name):
                 mrt_indexes[mrt_title] = result
 
         parent_index_id = 1
-        # index_parent(parent_index, parent_index_id)
+        index_parent(parent_index, parent_index_id)
 
         for table in tables:
             title = entry.replace(".html", "")
@@ -485,7 +484,7 @@ def extract_downloaded_tables(directory_name):
                     publication_date,
                     journal,
                     authors,
-                    journal_title,
+                    _,
                     doi,
                 ) = extract_mnras_extra_metadata(soup_content)
                 metadata["journal"] = journal
@@ -516,13 +515,15 @@ def extract_downloaded_tables(directory_name):
                 table_info,
                 supplements[index],
             )
-            # append_to_elastic_index(parent_index, doc_index_id, json_data)
+            if not json_data:
+                continue
+            append_to_elastic_index(parent_index, doc_index_id, json_data)
 
         mrt_parent_index = "mrt_astro23"
         mrt_parent_index_id = 1
-        # index_parent(mrt_parent_index, mrt_parent_index_id)
+        index_parent(mrt_parent_index, mrt_parent_index_id)
         for mrt_index in mrt_indexes:
             doc_index_id += 1
-            # append_to_elastic_index(
-            #     mrt_parent_index, doc_index_id, mrt_indexes[mrt_index]
-            # )
+            append_to_elastic_index(
+                mrt_parent_index, doc_index_id, mrt_indexes[mrt_index]
+            )
