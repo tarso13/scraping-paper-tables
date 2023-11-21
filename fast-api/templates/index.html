@@ -1,0 +1,47 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astrophysical Search</title>
+  <meta author="Tarso Keletzi">
+  <link rel="stylesheet" href="{{ url_for('static', path='index.css') }}">
+</head>
+<body>
+
+  <div class="container">
+    <h1>Astrophysical Journal Search</h1>
+    <div class="button-container">
+      <form action="/search" method="get" id="title">
+        <button type="submit" name="search_type" value="title" class="button">Search By Title</button>
+      </form>
+
+      <form action="/search" method="get" id="author">
+        <button type="submit" name="search_type" value="author" class="button">Search By Author</button>
+      </form>
+
+      <form action="/search" method="get" id="year">
+        <button type="submit" name="search_type" value="year" class="button">Search By Year</button>
+      </form>
+
+      <form action="/search" method="get" id="year_range">
+        <button type="submit" name="search_type" value="year range" class="button">Search By Year Range</button>
+      </form>
+
+      <form action="/search" method="get" id="journal">
+        <button type="submit" name="search_type" value="journal" class="button">Search By Journal</button>
+      </form>
+
+      <form action="/search" method="get" id="table_caption">
+        <button type="submit" name="search_type" value="table caption" class="button">Search By Table Caption</button>
+        </form>
+
+      <form action="/search" method="get" id="word_in_table">
+        <button type="submit" name="search_type" value="word in table" class="button">Search By Word In Table</button>
+        </form>
+    </div>
+  </div>
+
+</body>
+</html>

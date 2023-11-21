@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astrophysical Search</title>
+  <meta author="Tarso Keletzi">
+  <link rel="stylesheet" href="{{ url_for('static', path='query.css') }}">
+</head>
+<body>
+
+  <div class="container">
+    <h1>Astrophysical Journal Search</h1>
+    <div class="button-container">
+        <form action="/query" method="get" id="query">
+            <input type="text" name="input_search" id="input_text" value="" class="input" placeholder="Enter {{search_type}}..."></input>
+            <input type="text" name="input_search" id="input_text2" value="" class="input" placeholder="Enter {{search_type}}..." style="display: none"></input>
+            <button type="submit" name="search" value="search" class="button">Search</button>
+          </form>
+  </div>
+
+</body>
+</html>
