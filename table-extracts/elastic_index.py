@@ -55,11 +55,13 @@ def search_index_by_title(index, title, maximum_results=2000):
     query = {
         "from": minimum_results,
         "size": maximum_results,
-        "query": {"match": {"metadata.title": title}},
+        "query": {"match": {"metadata.paper_title": title}},
     }
 
     results = es.search(index=index, body=query)
-    return results
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    return results["hits"]["hits"][4]["_source"]
 
 
 # Search documents by word in their content
@@ -73,7 +75,9 @@ def search_index_by_word_in_table(index, word, maximum_results=2000):
     }
 
     results = es.search(index=index, body=query)
-    return results
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    return results["hits"]["hits"][4]["_source"]
 
 
 # Create a connection to Elasticsearch
@@ -84,11 +88,13 @@ def search_index_by_table_caption(index, content, maximum_results=2000):
     query = {
         "from": minimum_results,
         "size": maximum_results,
-        "query": {"match": {"table info.caption": content}},
+        "query": {"match": {"table_info.caption": content}},
     }
 
     results = es.search(index=index, body=query)
-    return results
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    return results["hits"]["hits"][4]["_source"]
 
 
 # Create a connection to Elasticsearch
@@ -116,7 +122,9 @@ def search_index_by_date(index, start_date, end_date, maximum_results=2000):
     }
 
     results = es.search(index=index, body=query)
-    return results
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    return results["hits"]["hits"][4]["_source"]
 
 
 # Create a connection to Elasticsearch
@@ -147,7 +155,9 @@ def search_index_by_journal(index, journal, maximum_results=2000):
     }
 
     results = es.search(index=index, body=query)
-    return results
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    return results["hits"]["hits"][4]["_source"]
 
 
 # Create a connection to Elasticsearch
@@ -162,7 +172,9 @@ def search_index_by_author(index, author, maximum_results=2000):
     }
 
     results = es.search(index=index, body=query)
-    return results
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    return results["hits"]["hits"][4]["_source"]
 
 
 # Format date in order to guarantee its type in elastic document

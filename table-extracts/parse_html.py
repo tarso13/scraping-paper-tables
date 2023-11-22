@@ -149,7 +149,7 @@ def table_info_to_json_data(metadata, table_info, json_data):
         if len(list(metadata["table_headers"])) == 0:
             metadata.pop("table_headers")
     json_data["metadata"] = metadata
-    json_data["table info"] = table_info
+    json_data["table_info"] = table_info
 
 
 # Add extra metadata in json data for a table

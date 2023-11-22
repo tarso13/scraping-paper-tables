@@ -8,8 +8,8 @@ body {
 }
 
 .container {
-    max-width: 800px;
-    margin: 50px auto;
+    max-width: 100%;
+    margin: auto;
     text-align: center;
 }
 
@@ -20,18 +20,19 @@ h1 {
 }
 
 p {
-    margin-top: 32%;
-    font-size: 1.5em;
+    margin-top: 0.5%;
+    font-size: 1em;
     color: aliceblue;
     font-family: Georgia, 'Times New Roman', Times, serif;
 }
 
 .result-container {
     width: 47%;
-    height: 50%;
+    height: 80%;
     border: 3px solid rgb(46, 35, 53);
     box-shadow: 9px 6px 4px #150c1a;
     color: aliceblue;
-    padding-bottom: 10%;
+    /* padding-bottom: 10%; */
     position: fixed;
+    overflow: auto;
 }
