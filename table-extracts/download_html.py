@@ -14,7 +14,6 @@ from parse_html import (
     title_to_metadata,
     index_parent,
     append_to_elastic_index,
-    doc_index_id,
 )
 from tldextract import extract
 from urllib.parse import urlparse

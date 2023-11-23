@@ -46,26 +46,30 @@ async def search(request: Request, search_type: str):
 
 
 @app.get("/query", response_class=HTMLResponse)
-async def query(request: Request, input_search: str, search_type: str):
-    index_name = "astro23"
+async def query(
+    request: Request,
+    input_search: str,
+    search_type: str,
+    input_search_extra: str = None,
+):
     results = None
     match search_type:
         case "title":
-            results = search_index_by_title(index_name, input_search)
+            results = search_index_by_title(input_search)
         case "author":
-            results = search_index_by_author(index_name, input_search)
+            results = search_index_by_author(input_search)
         case "year_range":
-            years = input_search.split("-")
-            start_year = int(years[0])
-            end_year = int(years[1])
-            results = search_index_by_year_range(index_name, start_year, end_year)
+            start_year = input_search
+            end_year = input_search_extra
+            results = search_index_by_year_range(start_year, end_year)
         case "year":
-            results = search_index_by_year(index_name, input_search)
+            results = search_index_by_year(input_search)
         case "journal":
-            results = search_index_by_journal(index_name, input_search)
+            results = search_index_by_journal(input_search)
         case "table_caption":
-            results = search_index_by_table_caption(index_name, input_search)
+            results = search_index_by_table_caption(input_search)
         case "word_in_table":
+            index_name = "astro"
             results = search_index_by_word_in_table(index_name, input_search)
 
     return templates.TemplateResponse(
@@ -73,6 +77,7 @@ async def query(request: Request, input_search: str, search_type: str):
         {
             "request": request,
             "input_search": input_search,
+            "input_search_extra": input_search_extra,
             "search_type": search_type,
             "results": results,
         },

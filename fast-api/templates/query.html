@@ -6,14 +6,29 @@
     <title>Astrophysical Search</title>
     <meta author="Tarso Keletzi">
     <link rel="stylesheet" href="{{ url_for('static', path='query.css') }}">
+    <script>
+        function checkPlaceholders() {
+          if ("{{search_type}}" === "year_range") {
+              document.getElementById("input_text").placeholder = "Enter start year...";
+          } else if ("{{search_type}}" === "table_caption") {
+              document.getElementById("input_text").placeholder = "Enter table caption...";
+          } else if ("{{search_type}}" === "word_in_table") {
+              document.getElementById("input_text").placeholder = "Enter word in table...";
+          }
+      }
+    </script>
   </head>
-  <body>
+  <body onload="checkPlaceholders()">
     <div class="container">
       <h1>Astrophysical Journal Search</h1>
       <div class="button-container">
-          <form action="/query" method="get" id="query">
+          <form action="/query" method="get" id="query" >
               <input type="text" name="input_search" id="input_text" value="" class="input" placeholder="Enter {{search_type}}..." required></input>
-              <button type="submit" name="search_type" value={{search_type}} class="button">Search</button>
+              {% if search_type == "year_range" %}
+                <input type="text" name="extra_input_search" id="extra_input_text" value=""
+                class="input" placeholder="Enter end year..." required>
+              {% endif %}
+             <button type="submit" name="search_type" value={{search_type}} class="button">Search</button>
             </form>
       </div>
     </div>

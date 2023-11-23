@@ -37,7 +37,11 @@ def index_parent(parent_index, parent_index_id):
 # Update the parent index with new content
 def add_document_to_index(parent_index, doc_index_id, content):
     es = establish_connection_to_index()
+    document_exists = es.exists(index=parent_index, id=doc_index_id)
+    if document_exists:
+        return -1
     es.index(index=parent_index, id=doc_index_id, body=content)
+    return 0
 
 
 # Create a connection to Elasticsearch
@@ -49,23 +53,27 @@ def delete_an_index(index):
 
 # Create a connection to Elasticsearch
 # Search documents by title
-def search_index_by_title(index, title, maximum_results=2000):
+def search_index_by_title(title, maximum_results=2000):
     es = establish_connection_to_index()
 
     query = {
         "from": minimum_results,
         "size": maximum_results,
-        "query": {"match": {"metadata.paper_title": title}},
+        "query": {"match_phrase": {"metadata.paper_title": title}},
     }
 
-    results = es.search(index=index, body=query)
+    results = es.search(body=query)
     if results["hits"]["total"]["value"] == 0:
         return "No results."
-    return results["hits"]["hits"][4]["_source"]
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
 
 
 # Search documents by word in their content
-def search_index_by_word_in_table(index, word, maximum_results=2000):
+def search_index_by_word_in_table(parent_index, word, maximum_results=2000):
     es = establish_connection_to_index()
 
     query = {
@@ -74,15 +82,23 @@ def search_index_by_word_in_table(index, word, maximum_results=2000):
         "query": {"simple_query_string": {"query": word}},
     }
 
-    results = es.search(index=index, body=query)
+    try:
+        results = es.search(index=parent_index, body=query)
+    except:
+        return "Try another word/phrase. It is likely that there are too many matches."
+
     if results["hits"]["total"]["value"] == 0:
         return "No results."
-    return results["hits"]["hits"][4]["_source"]
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
 
 
 # Create a connection to Elasticsearch
 # Search documents by brief notes on table caption
-def search_index_by_table_caption(index, content, maximum_results=2000):
+def search_index_by_table_caption(content, maximum_results=2000):
     es = establish_connection_to_index()
 
     query = {
@@ -91,10 +107,14 @@ def search_index_by_table_caption(index, content, maximum_results=2000):
         "query": {"match": {"table_info.caption": content}},
     }
 
-    results = es.search(index=index, body=query)
+    results = es.search(body=query)
     if results["hits"]["total"]["value"] == 0:
         return "No results."
-    return results["hits"]["hits"][4]["_source"]
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
 
 
 # Create a connection to Elasticsearch
@@ -102,7 +122,7 @@ def search_index_by_table_caption(index, content, maximum_results=2000):
 # The journals returned have publication date greater or equal to start_date given
 # and less or equal to end_date given
 # Note: Date should be either in yyyy-mm-dd or yyyy/mm/dd format
-def search_index_by_date(index, start_date, end_date, maximum_results=2000):
+def search_index_by_date(start_date, end_date, maximum_results=2000):
     es = establish_connection_to_index()
 
     formatted_start_date = format_date(start_date)
@@ -121,31 +141,35 @@ def search_index_by_date(index, start_date, end_date, maximum_results=2000):
         },
     }
 
-    results = es.search(index=index, body=query)
+    results = es.search(body=query)
     if results["hits"]["total"]["value"] == 0:
         return "No results."
-    return results["hits"]["hits"][4]["_source"]
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
 
 
 # Create a connection to Elasticsearch
 # Search documents by year
-def search_index_by_year(index, year, maximum_results=2000):
+def search_index_by_year(year, maximum_results=2000):
     start_date = format_date(f"{str(year)}-01-01")
     end_date = format_date(f"{str(year)}-12-31")
-    return search_index_by_date(index, start_date, end_date, maximum_results)
+    return search_index_by_date(start_date, end_date, maximum_results)
 
 
 # Create a connection to Elasticsearch
 # Search documents by year range
-def search_index_by_year_range(index, start_year, end_year, maximum_results=2000):
+def search_index_by_year_range(start_year, end_year, maximum_results=2000):
     start_date = format_date(f"{str(start_year)}-01-01")
     end_date = format_date(f"{str(end_year)}-12-31")
-    return search_index_by_date(index, start_date, end_date, maximum_results)
+    return search_index_by_date(start_date, end_date, maximum_results)
 
 
 # Create a connection to Elasticsearch
 # Search documents by journal name
-def search_index_by_journal(index, journal, maximum_results=2000):
+def search_index_by_journal(journal, maximum_results=2000):
     es = establish_connection_to_index()
 
     query = {
@@ -154,15 +178,19 @@ def search_index_by_journal(index, journal, maximum_results=2000):
         "query": {"match_phrase": {"metadata.journal": journal}},
     }
 
-    results = es.search(index=index, body=query)
+    results = es.search(body=query)
     if results["hits"]["total"]["value"] == 0:
         return "No results."
-    return results["hits"]["hits"][4]["_source"]
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
 
 
 # Create a connection to Elasticsearch
 # Search documents by author name
-def search_index_by_author(index, author, maximum_results=2000):
+def search_index_by_author(author, maximum_results=2000):
     es = establish_connection_to_index()
 
     query = {
@@ -171,10 +199,14 @@ def search_index_by_author(index, author, maximum_results=2000):
         "query": {"match": {"metadata.author(s)": author}},
     }
 
-    results = es.search(index=index, body=query)
+    results = es.search(body=query)
     if results["hits"]["total"]["value"] == 0:
         return "No results."
-    return results["hits"]["hits"][4]["_source"]
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
 
 
 # Format date in order to guarantee its type in elastic document

@@ -18,9 +18,9 @@ def main():
     download_all_html_files("pubs", aanda_2022, True)
     mnras_2022 = read_urls_from_file("mnras_2022.txt")
     download_all_html_files("pubs", mnras_2022, False)
-    extract_downloaded_tables("pubs_aanda")
-    extract_downloaded_tables("pubs_aanda/pubs_aanda_tables")
-    extract_downloaded_tables("pubs_mnras")
+    _ = extract_downloaded_tables("pubs_aanda", 0)
+    doc_index_id = extract_downloaded_tables("pubs_aanda/pubs_aanda_tables", 1)
+    _ = extract_downloaded_tables("pubs_mnras", doc_index_id + 1)
 
 
 main()

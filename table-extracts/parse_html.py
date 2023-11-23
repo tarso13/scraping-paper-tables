@@ -7,8 +7,6 @@ from iopscience_parser import *
 from mnras_parser import *
 from datetime import datetime, date
 
-doc_index_id = 0
-
 # List containing the html files with tables that have been extracted
 files_extracted = []
 
@@ -82,18 +80,24 @@ def search_metadata(soup_content):
             case "citation_author":
                 authors.append(content)
             case "citation_journal_title":
-                metadata["journal"] = content
+                if not "journal" in metadata:
+                    metadata["journal"] = content
             case "citation_title":
-                metadata["paper_title"] = content
+                if not "paper_title" in metadata:
+                    metadata["paper_title"] = content
             case "citation_publication_date":
                 date = format_date(content)
-                metadata["date"] = date
+                if not "date" in metadata:
+                    metadata["date"] = date
             case "citation_online_date":
                 date = format_date(content)
-                metadata["date"] = date
+                if not "date" in metadata:
+                    metadata["date"] = date
             case "citation_doi":
-                metadata["doi"] = content
-    metadata["author(s)"] = authors
+                if not "doi" in metadata:
+                    metadata["doi"] = content
+    if not "author(s)" in metadata:
+        metadata["author(s)"] = authors
     return metadata
 
 
@@ -399,16 +403,27 @@ def write_to_json_file(directory_name, title, json_data):
     file.write(json.dumps(json_data, indent=1))
 
 
-# Append document to actions in order to update the parent elastic index
+# Append document in order to update the parent elastic index
 def append_to_elastic_index(parent_index, doc_index_id, content):
-    add_document_to_index(parent_index, doc_index_id, content)
+    return add_document_to_index(parent_index, doc_index_id, content)
+
+
+# Index parent indexes to add documents (journals)
+def index_parent_indexes(parent_index_name, mrt_parent_index_name):
+    parent_index_id = 1
+    index_parent(parent_index_name, parent_index_id)
+    mrt_parent_index_id = 2
+    index_parent(mrt_parent_index_name, mrt_parent_index_id)
 
 
 # Extract all table data found in html files in given directory and print them
-def extract_downloaded_tables(directory_name):
+def extract_downloaded_tables(directory_name, doc_index_id):
     if os.path.exists(directory_name) == False:
         return
-    parent_index = ""
+
+    parent_index_name = "astro"
+    mrt_parent_index_name = "mrt_astro23"
+    # index_parent_indexes(parent_index_name, mrt_parent_index_name)
 
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
@@ -431,9 +446,6 @@ def extract_downloaded_tables(directory_name):
             continue
 
         tables, supplements = extract_html_tables(soup_content)
-
-        parent_index = "astro23"
-        parent_index_id = 0
         footnotes = None
         metadata = {}
         extra_metadata = {}
@@ -444,9 +456,6 @@ def extract_downloaded_tables(directory_name):
 
         if "A&A" in entry:
             metadata = search_aanda_journal_metadata(entry)
-            if not metadata:
-                os.remove(path_to_entry)
-                continue
             d = dt.datetime.strptime(metadata["date"], "%Y-%m-%d")
             year = d.year
             footnotes = search_aanda_footnotes(soup_content, year)
@@ -466,9 +475,6 @@ def extract_downloaded_tables(directory_name):
                 write_to_json_file("json_mrts", mrt_title, result)
                 mrt_indexes[mrt_title] = result
 
-        parent_index_id = 1
-        index_parent(parent_index, parent_index_id)
-
         for table in tables:
             title = entry.replace(".html", "")
 
@@ -476,7 +482,6 @@ def extract_downloaded_tables(directory_name):
             if "IOPscience" in title:
                 title += f"_T{str(index + 1)}"
 
-            global doc_index_id
             doc_index_id += 1
             metadata["retrieval_date"] = str(date.today())
             if "MNRAS" in title:
@@ -484,7 +489,7 @@ def extract_downloaded_tables(directory_name):
                     publication_date,
                     journal,
                     authors,
-                    _,
+                    paper_title,
                     doi,
                 ) = extract_mnras_extra_metadata(soup_content)
                 metadata["journal"] = journal
@@ -492,11 +497,12 @@ def extract_downloaded_tables(directory_name):
                 metadata["date"] = formatted_date
                 metadata["authors"] = authors
                 metadata["doi"] = doi
+                metadata["paper_title"] = paper_title
                 if (
                     not publication_date
                     or not journal
                     or not authors
-                    or not title
+                    or not paper_title
                     or not doi
                 ):
                     metadata = extract_journal_metadata(soup_content)
@@ -517,13 +523,15 @@ def extract_downloaded_tables(directory_name):
             )
             if not json_data:
                 continue
-            append_to_elastic_index(parent_index, doc_index_id, json_data)
+            ret_code = append_to_elastic_index(
+                parent_index_name, doc_index_id, json_data
+            )
+            if ret_code == -1:
+                assert False
 
-        mrt_parent_index = "mrt_astro23"
-        mrt_parent_index_id = 1
-        index_parent(mrt_parent_index, mrt_parent_index_id)
         for mrt_index in mrt_indexes:
             doc_index_id += 1
             append_to_elastic_index(
-                mrt_parent_index, doc_index_id, mrt_indexes[mrt_index]
+                mrt_parent_index_name, doc_index_id, mrt_indexes[mrt_index]
             )
+    return doc_index_id
