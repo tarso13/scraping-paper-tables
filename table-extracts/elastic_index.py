@@ -24,13 +24,21 @@ def establish_connection_to_index():
 
 
 # Create a connection to Elasticsearch
-# Index the document which is the parent index
-def index_parent(parent_index, parent_index_id):
+# Create the parent index
+def create_parent_index(parent_index):
     es = establish_connection_to_index()
+    mapping = {
+        "mappings": {
+            "properties": {
+                "metadata": {
+                    "properties": {"date": {"type": "date", "format": "yyyy-MM-dd"}}
+                }
+            }
+        },
+        "settings": {"index.mapping.total_fields.limit": 1000000},
+    }
 
-    doc = {}
-
-    es.index(index=parent_index, id=parent_index_id, document=doc)
+    es.indices.create(index=parent_index, body=mapping)
 
 
 # Create a connection to Elasticsearch
@@ -42,13 +50,6 @@ def add_document_to_index(parent_index, doc_index_id, content):
         return -1
     es.index(index=parent_index, id=doc_index_id, body=content)
     return 0
-
-
-# Create a connection to Elasticsearch
-# Delete index given (for debugging purposes so far)
-def delete_an_index(index):
-    es = establish_connection_to_index()
-    es.options(ignore_status=[400, 404]).indices.delete(index=index)
 
 
 # Create a connection to Elasticsearch

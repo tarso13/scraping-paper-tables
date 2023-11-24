@@ -1,6 +1,5 @@
 from bs4 import BeautifulSoup
 import json
-from lxml import html
 import time
 import random
 
@@ -12,7 +11,6 @@ from parse_html import (
     search_aanda_table_info,
     extract_html_tables,
     title_to_metadata,
-    index_parent,
     append_to_elastic_index,
 )
 from tldextract import extract
@@ -244,8 +242,7 @@ def extract_undownloaded_tables(content, title, entry):
 
     tables, _ = extract_html_tables(soup_content)
 
-    parent_index = "astro23"
-    parent_index_id = 0
+    parent_index = "astro"
     footnotes = None
     metadata = {}
     extra_metadata = {}
@@ -255,9 +252,6 @@ def extract_undownloaded_tables(content, title, entry):
         footnotes = search_aanda_footnotes(soup_content)
         table_info = search_aanda_table_info(soup_content)
         metadata = search_aanda_journal_metadata(entry)
-
-    parent_index_id = 1
-    index_parent(parent_index, parent_index_id)
 
     for table in tables:
         index = tables.index(table)

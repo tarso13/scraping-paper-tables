@@ -1,5 +1,5 @@
 from download_html import *
-from parse_html import extract_downloaded_tables
+from parse_html import extract_downloaded_tables, create_parent_index
 
 
 def read_urls_from_file(filename):
@@ -14,6 +14,7 @@ def read_urls_from_file(filename):
 
 # Main function to download initial urls and extract data
 def main():
+    create_parent_index("astro")
     aanda_2022 = read_urls_from_file("aanda_2022.txt")
     download_all_html_files("pubs", aanda_2022, True)
     mnras_2022 = read_urls_from_file("mnras_2022.txt")
