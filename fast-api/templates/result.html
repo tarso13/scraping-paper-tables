@@ -10,9 +10,14 @@
   <body>
     <div class="container">
       <h1>Astrophysical Journal Search</h1>
-      <div class="result-container">
+       <div class="result-container">
         <p>{{results}}</p>
       </div>
-      </div>
+      <div class="back-page">
+      <form action="/search" method="get" id="{{search_type}}">
+        <button type="submit" name="search_type" value="{{search_type}}" class="button">Back</button>
+      </form>  
+    </div>
+    </div>
   </body>
 </html>

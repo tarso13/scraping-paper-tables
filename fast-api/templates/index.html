@@ -32,13 +32,25 @@
           <button type="submit" name="search_type" value="journal" class="button">Search By Journal</button>
         </form>
 
+        <form action="/search" method="get" id="doi">
+          <button type="submit" name="search_type" value="doi" class="button">Search By DOI</button>
+        </form>
+
         <form action="/search" method="get" id="table_caption">
           <button type="submit" name="search_type" value="table_caption" class="button">Search By Table Caption</button>
-          </form>
+        </form>
+
+        <form action="/search" method="get" id="author_and_year">
+          <button type="submit" name="search_type" value="author_and_year" class="button">Search By Author & Year </button>
+        </form>
+        
+        <form action="/search" method="get" id="author_and_journal">
+          <button type="submit" name="search_type" value="author_and_journal" class="button">Search By Author & Journal</button>
+        </form>
 
         <form action="/search" method="get" id="word_in_table">
           <button type="submit" name="search_type" value="word_in_table" class="button">Search By Word In Table</button>
-          </form>
+        </form>
       </div>
     </div>
   </body>

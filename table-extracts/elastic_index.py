@@ -210,6 +210,91 @@ def search_index_by_author(author, maximum_results=2000):
     return journals_str
 
 
+# Create a connection to Elasticsearch
+# Search documents by paper doi
+def search_index_by_doi(doi, maximum_results=2000):
+    es = establish_connection_to_index()
+
+    query = {
+        "from": minimum_results,
+        "size": maximum_results,
+        "query": {"match": {"metadata.doi": doi}},
+    }
+
+    results = es.search(body=query)
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
+
+
+# Create a connection to Elasticsearch
+# Search documents by author name and journal
+def search_index_by_author_and_journal(author, journal, maximum_results=2000):
+    es = establish_connection_to_index()
+
+    query = {
+        "from": minimum_results,
+        "size": maximum_results,
+        "query": {
+            "bool": {
+                "must": [
+                    {"match": {"metadata.author(s)": author}},
+                    {"match": {"metadata.journal": journal}},
+                ]
+            }
+        },
+    }
+
+    results = es.search(body=query)
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
+
+
+# Create a connection to Elasticsearch
+# Search documents by author name and year
+def search_index_by_author_and_year(author, year, maximum_results=2000):
+    es = establish_connection_to_index()
+    start_date = format_date(f"{str(year)}-01-01")
+    end_date = format_date(f"{str(year)}-12-31")
+    query = {
+        "from": minimum_results,
+        "size": maximum_results,
+        "query": {
+            "bool": {
+                "must": [
+                    {"match": {"metadata.author(s)": author}},
+                    {
+                        "range": {
+                            "metadata.date": {
+                                "gte": start_date,
+                                "lte": end_date,
+                            }
+                        }
+                    },
+                ]
+            }
+        },
+    }
+
+    results = es.search(body=query)
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        journals_str += str(results["hits"]["hits"][i]["_source"])
+    return journals_str
+
+
 # Format date in order to guarantee its type in elastic document
 def format_date(date):
     d = dt.datetime.strptime(str(date).replace("/", "-"), "%Y-%m-%d")

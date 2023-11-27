@@ -28,11 +28,34 @@ p {
 
 .result-container {
     width: 47%;
-    height: 80%;
+    height: 70%;
     border: 3px solid rgb(46, 35, 53);
     box-shadow: 9px 6px 4px #150c1a;
     color: aliceblue;
     background-color: #2a80b9;
     position: fixed;
     overflow: auto;
+}
+
+.back-page {
+    position: relative;
+    margin-top: 80%;
+}
+
+.button {
+    display: block;
+    width: 50%;
+    padding: 10px 0;
+    margin-bottom: 10px;
+    margin-left: 23%;
+    font-size: 1.2em;
+    text-decoration: none;
+    color: #fff;
+    background-color: #3498db;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.button:hover {
+    background-color: #2980b9;
 }
