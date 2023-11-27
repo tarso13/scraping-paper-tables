@@ -50,7 +50,7 @@ async def query(
     request: Request,
     input_search: str,
     search_type: str,
-    input_search_extra: str = None,
+    extra_input_search: str = None,
 ):
     results = None
     match search_type:
@@ -60,7 +60,7 @@ async def query(
             results = search_index_by_author(input_search)
         case "year_range":
             start_year = input_search
-            end_year = input_search_extra
+            end_year = extra_input_search
             results = search_index_by_year_range(start_year, end_year)
         case "year":
             results = search_index_by_year(input_search)
@@ -77,7 +77,7 @@ async def query(
         {
             "request": request,
             "input_search": input_search,
-            "input_search_extra": input_search_extra,
+            "extra_input_search": extra_input_search,
             "search_type": search_type,
             "results": results,
         },

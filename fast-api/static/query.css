@@ -68,8 +68,3 @@ h1 {
     border-radius: 5px;
     transition: background-color 0.3s ease;
 }
-
-label {
-    color: aliceblue;
-    font-family: Georgia, 'Times New Roman', Times, serif;
-}
