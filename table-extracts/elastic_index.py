@@ -1,5 +1,6 @@
 from elasticsearch import Elasticsearch
 import sys
+import json
 
 sys.path.append("../")
 from password import get_password
@@ -21,6 +22,18 @@ def establish_connection_to_index():
     )
 
     return es
+
+
+def collect_search_results(results):
+    if results["hits"]["total"]["value"] == 0:
+        return "No results."
+    total_hits = len(results["hits"]["hits"])
+    journals_str = ""
+    for i in range(0, total_hits):
+        obj = results["hits"]["hits"][i]["_source"]
+        json_formatted_str = json.dumps(obj, indent=4)
+        journals_str += f"{json_formatted_str}"
+    return journals_str
 
 
 # Create a connection to Elasticsearch
@@ -64,13 +77,7 @@ def search_index_by_title(title, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Search documents by word in their content
@@ -88,13 +95,7 @@ def search_index_by_word_in_table(parent_index, word, maximum_results=2000):
     except:
         return "Try another word/phrase. It is likely that there are too many matches."
 
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -109,13 +110,7 @@ def search_index_by_table_caption(content, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -143,13 +138,7 @@ def search_index_by_date(start_date, end_date, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -180,13 +169,7 @@ def search_index_by_journal(journal, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -201,13 +184,7 @@ def search_index_by_author(author, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -222,13 +199,7 @@ def search_index_by_doi(doi, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -250,13 +221,7 @@ def search_index_by_author_and_journal(author, journal, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -286,13 +251,7 @@ def search_index_by_author_and_year(author, year, maximum_results=2000):
     }
 
     results = es.search(body=query)
-    if results["hits"]["total"]["value"] == 0:
-        return "No results."
-    total_hits = len(results["hits"]["hits"])
-    journals_str = ""
-    for i in range(0, total_hits):
-        journals_str += str(results["hits"]["hits"][i]["_source"])
-    return journals_str
+    return collect_search_results(results)
 
 
 # Format date in order to guarantee its type in elastic document
