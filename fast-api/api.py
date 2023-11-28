@@ -14,6 +14,9 @@ from elastic_index import (
     search_index_by_title,
     search_index_by_table_caption,
     search_index_by_word_in_table,
+    search_index_by_doi,
+    search_index_by_author_and_year,
+    search_index_by_author_and_journal,
 )
 
 app = FastAPI()
@@ -59,9 +62,7 @@ async def query(
         case "author":
             results = search_index_by_author(input_search)
         case "year_range":
-            start_year = input_search
-            end_year = extra_input_search
-            results = search_index_by_year_range(start_year, end_year)
+            results = search_index_by_year_range(input_search, extra_input_search)
         case "year":
             results = search_index_by_year(input_search)
         case "journal":
@@ -71,6 +72,14 @@ async def query(
         case "word_in_table":
             index_name = "astro"
             results = search_index_by_word_in_table(index_name, input_search)
+        case "doi":
+            results = search_index_by_doi(input_search)
+        case "author_and_year":
+            results = search_index_by_author_and_year(input_search, extra_input_search)
+        case "author_and_journal":
+            results = search_index_by_author_and_journal(
+                input_search, extra_input_search
+            )
 
     return templates.TemplateResponse(
         "result.html",

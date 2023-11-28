@@ -10,10 +10,17 @@
         function checkPlaceholders() {
           if ("{{search_type}}" === "year_range") {
               document.getElementById("input_text").placeholder = "Enter start year...";
+              document.getElementById("extra_input_text").placeholder = "Enter end year..."
           } else if ("{{search_type}}" === "table_caption") {
               document.getElementById("input_text").placeholder = "Enter table caption...";
           } else if ("{{search_type}}" === "word_in_table") {
               document.getElementById("input_text").placeholder = "Enter word in table...";
+          }else if("{{search_type}}" === "author_and_year"){
+              document.getElementById("input_text").placeholder = "Enter author...";
+              document.getElementById("extra_input_text").placeholder = "Enter year..."
+          }else if("{{search_type}}" === "author_and_journal"){
+              document.getElementById("input_text").placeholder = "Enter author...";
+              document.getElementById("extra_input_text").placeholder = "Enter journal..."
           }
       }
     </script>
@@ -24,9 +31,9 @@
       <div class="button-container">
           <form action="/query" method="get" id="query" >
               <input type="text" name="input_search" id="input_text" value="" class="input" placeholder="Enter {{search_type}}..." required></input>
-              {% if search_type == "year_range" %}
+              {% if search_type == "year_range" or search_type == "author_and_year" or search_type == "author_and_journal" %}
                 <input type="text" name="extra_input_search" id="extra_input_text" value=""
-                              class="input" placeholder="Enter end year..." required>
+                              class="input" placeholder="" required>
               {% endif %}
              <button type="submit" name="search_type" value={{search_type}} class="button">Search</button>
           </form>
