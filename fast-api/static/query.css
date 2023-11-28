@@ -1,5 +1,5 @@
 body {
-    margin: 0;
+    margin: auto;
     padding: 0;
     background: url('https://c1.wallpaperflare.com/path/278/988/956/earth-globe-moon-world-bcfb5908b965d2054d05e625bc4e309c.jpg') no-repeat center center fixed;
     background-size: cover;
@@ -19,6 +19,14 @@ h1 {
     font-family: Georgia, 'Times New Roman', Times, serif;
 }
 
+h4 {
+    margin-bottom: -5%;
+    font-size: 1.5em;
+    color: aliceblue;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    text-align: center;
+}
+
 .button-container {
     margin-top: 20px;
 }
@@ -28,7 +36,8 @@ h1 {
     width: 50%;
     padding: 10px 0;
     margin-bottom: 10px;
-    margin-left: 23%;
+    margin: auto;
+    margin-bottom: 1%;
     font-size: 1.2em;
     text-decoration: none;
     color: #fff;
@@ -48,19 +57,17 @@ h1 {
 .input-container input {
     width: 200px;
     padding: 5px;
-    margin-right: 10px;
 }
 
 #extra_input_text {
-    margin-top: -1%;
+    margin-top: -0.5%;
 }
 
 .input {
     display: block;
     width: 49%;
-    margin-right: 4%;
-    margin-left: 23%;
-    margin-top: 15%;
+    margin: auto;
+    margin-top: 10%;
     padding: 10px 0;
     margin-bottom: 10px;
     font-size: 1.2em;

@@ -31,15 +31,17 @@ p {
     height: 70%;
     border: 3px solid rgb(46, 35, 53);
     box-shadow: 9px 6px 4px #150c1a;
-    color: aliceblue;
     background-color: aliceblue;
+    margin: auto;
+    text-align: center;
     position: fixed;
     overflow: auto;
 }
 
 .back-page {
     position: relative;
-    margin-top: 80%;
+    margin: auto;
+    margin-top: 81%;
 }
 
 .button {

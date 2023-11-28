@@ -36,11 +36,6 @@ async def home_page(request: Request):
     )
 
 
-@app.get("/favicon.ico", response_class=HTMLResponse)
-async def favicon():
-    return HTMLResponse(content="", status_code=404)
-
-
 @app.get("/search", response_class=HTMLResponse)
 async def search(request: Request, search_type: str):
     return templates.TemplateResponse(
