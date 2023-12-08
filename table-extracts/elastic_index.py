@@ -41,7 +41,8 @@ def get_next_document_id(index):
     )
 
     result = es.count(index=index)
-    return result["count"] + 1
+    count = result["count"]
+    return count + 1
 
 
 # Read elastic password from file so as to keep it private
@@ -92,9 +93,9 @@ def create_parent_index(parent_index):
 def add_document_to_index(parent_index, doc_index_id, content):
     es = establish_connection_to_index()
     document_exists = es.exists(index=parent_index, id=doc_index_id)
-    doi = content["metadata"]["doi"]
 
-    if document_exists or (search_index_by_doi(doi, 1) != "No results"):
+    if document_exists:
+        print(str(doc_index_id) + " exists already")
         return -1
 
     es.index(index=parent_index, id=doc_index_id, body=content)
@@ -147,6 +148,12 @@ def search_index_by_table_caption(content, maximum_results=2000):
 
     results = es.search(body=query)
     return collect_search_results(results)
+
+
+# Force refresh index to make sure it is updated
+def refresh_index(index_name):
+    es = establish_connection_to_index()
+    es.indices.refresh(index=index_name)
 
 
 # Create a connection to Elasticsearch

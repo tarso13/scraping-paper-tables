@@ -414,7 +414,7 @@ def extract_downloaded_tables(directory_name):
         return
 
     parent_index_name = "astro"
-    mrt_parent_index_name = "mrt_astro23"
+    mrt_parent_index_name = "mrt_astro"
 
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
@@ -460,12 +460,15 @@ def extract_downloaded_tables(directory_name):
             mrt_titles, json_results = extract_iopscience_mrt_tables(
                 soup_content, "iopscience_mrts"
             )
+
             for result in json_results:
                 index = json_results.index(result)
                 mrt_title = mrt_titles[index]
+                result["metadata"]["doi"] = metadata["doi"]
                 write_to_json_file("json_mrts", mrt_title, result)
                 mrt_indexes[mrt_title] = result
 
+        refresh_index(parent_index_name)
         doc_index_id = get_next_document_id(parent_index_name)
         for table in tables:
             title = entry.replace(".html", "")
@@ -498,10 +501,10 @@ def extract_downloaded_tables(directory_name):
                 ):
                     metadata = extract_journal_metadata(soup_content)
 
-            if "IOPscience" in title:
-                footnotes = search_iopscience_footnotes(table, table_info)
-                table_info["caption"] = search_iopscience_table_caption(table)
-                table_info["notes"] = search_iopscience_table_notes(table)
+                if "IOPscience" in title:
+                    footnotes = search_iopscience_footnotes(table, table_info)
+                    table_info["caption"] = search_iopscience_table_caption(table)
+                    table_info["notes"] = search_iopscience_table_notes(table)
 
             json_data = extract_table_data(
                 table,
@@ -523,8 +526,13 @@ def extract_downloaded_tables(directory_name):
                 assert False
             doc_index_id += 1
 
-        for mrt_index in mrt_indexes:
-            append_to_elastic_index(
-                mrt_parent_index_name, doc_index_id, mrt_indexes[mrt_index]
-            )
-            doc_index_id += 1
+        if mrt_indexes:
+            refresh_index(mrt_parent_index_name)
+            mrt_doc_index_id = get_next_document_id(mrt_parent_index_name)
+            for mrt_index in mrt_indexes:
+                ret_code = append_to_elastic_index(
+                    mrt_parent_index_name, mrt_doc_index_id, mrt_indexes[mrt_index]
+                )
+                if ret_code == -1:
+                    assert False
+                mrt_doc_index_id += 1
