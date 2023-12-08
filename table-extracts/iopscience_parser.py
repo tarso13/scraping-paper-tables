@@ -297,13 +297,13 @@ def extract_iopscience_mrt_tables(soup_content, directory_name):
 
             mrt_file = open(path_to_mrt, "r")
             lines = mrt_file.readlines()
-            title, authors, caption = extract_mrt_metadata(lines)
+            # title, authors, caption = extract_mrt_metadata(lines)
             units, explanations = extract_mrt_units_and_explanations(lines)
             data = ascii.read(path_to_mrt, format="mrt")
             df = data.to_pandas()
             table = df.to_dict()
             json_data = {}
-            json_data = mrt_metadata_to_json(title, authors, caption, json_data)
+            # json_data = mrt_metadata_to_json(title, authors, caption, json_data)
             json_data = mrt_headers_to_json(units, explanations, json_data)
             json_data = mrt_table_data_to_json(table, json_data)
             json_results.append(json_data)
