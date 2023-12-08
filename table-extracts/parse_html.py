@@ -408,14 +408,6 @@ def append_to_elastic_index(parent_index, doc_index_id, content):
     return add_document_to_index(parent_index, doc_index_id, content)
 
 
-# Index parent indexes to add documents (journals)
-def index_parent_indexes(parent_index_name, mrt_parent_index_name):
-    parent_index_id = 1
-    index_parent(parent_index_name, parent_index_id)
-    mrt_parent_index_id = 2
-    index_parent(mrt_parent_index_name, mrt_parent_index_id)
-
-
 # Extract all table data found in html files in given directory and print them
 def extract_downloaded_tables(directory_name, doc_index_id):
     if os.path.exists(directory_name) == False:
@@ -423,7 +415,6 @@ def extract_downloaded_tables(directory_name, doc_index_id):
 
     parent_index_name = "astro"
     mrt_parent_index_name = "mrt_astro23"
-    # index_parent_indexes(parent_index_name, mrt_parent_index_name)
 
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)

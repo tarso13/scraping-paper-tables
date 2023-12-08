@@ -11,6 +11,39 @@ documents = []
 minimum_results = 0
 
 
+# Adjust journal name based on the journal name the user has provided
+# Mostly useful for api use
+def adjust_journal_name(journal_name):
+    possible_mnras = [
+        "MNRAS",
+        "mnras",
+        "Monthly Notices of the Royal Astronomical Society",
+    ]
+
+    possible_aanda = ["A&A", "a&a", "Astronomy & Astrophysics"]
+
+    if journal_name in possible_mnras:
+        return "mnras"
+
+    if journal_name in possible_aanda:
+        return "Astronomy & Astrophysics"
+
+    return journal_name
+
+
+# Gets next available document id to append to index
+def get_next_document_id(index):
+    elastic_password = get_password("../elastic_password.txt")
+
+    es = Elasticsearch(
+        [{"host": "localhost", "port": 9200, "scheme": "http"}],
+        basic_auth=["elastic", elastic_password],
+    )
+
+    result = es.count(index=index)
+    return result["count"] + 1
+
+
 # Read elastic password from file so as to keep it private
 # Create a connection to Elasticsearch
 def establish_connection_to_index():
@@ -59,8 +92,11 @@ def create_parent_index(parent_index):
 def add_document_to_index(parent_index, doc_index_id, content):
     es = establish_connection_to_index()
     document_exists = es.exists(index=parent_index, id=doc_index_id)
-    if document_exists:
+    doi = content["metadata"]["doi"]
+
+    if document_exists or (search_index_by_doi(doi, 1) != "No results"):
         return -1
+
     es.index(index=parent_index, id=doc_index_id, body=content)
     return 0
 
@@ -161,11 +197,11 @@ def search_index_by_year_range(start_year, end_year, maximum_results=2000):
 # Search documents by journal name
 def search_index_by_journal(journal, maximum_results=2000):
     es = establish_connection_to_index()
-
+    journal_name = adjust_journal_name(journal)
     query = {
         "from": minimum_results,
         "size": maximum_results,
-        "query": {"match_phrase": {"metadata.journal": journal}},
+        "query": {"match_phrase": {"metadata.journal": journal_name}},
     }
 
     results = es.search(body=query)
@@ -206,7 +242,7 @@ def search_index_by_doi(doi, maximum_results=2000):
 # Search documents by author name and journal
 def search_index_by_author_and_journal(author, journal, maximum_results=2000):
     es = establish_connection_to_index()
-
+    journal_name = adjust_journal_name(journal)
     query = {
         "from": minimum_results,
         "size": maximum_results,
@@ -214,7 +250,7 @@ def search_index_by_author_and_journal(author, journal, maximum_results=2000):
             "bool": {
                 "must": [
                     {"match": {"metadata.author(s)": author}},
-                    {"match": {"metadata.journal": journal}},
+                    {"match": {"metadata.journal": journal_name}},
                 ]
             }
         },
