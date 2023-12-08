@@ -409,7 +409,7 @@ def append_to_elastic_index(parent_index, doc_index_id, content):
 
 
 # Extract all table data found in html files in given directory and print them
-def extract_downloaded_tables(directory_name, doc_index_id):
+def extract_downloaded_tables(directory_name):
     if os.path.exists(directory_name) == False:
         return
 
@@ -466,6 +466,7 @@ def extract_downloaded_tables(directory_name, doc_index_id):
                 write_to_json_file("json_mrts", mrt_title, result)
                 mrt_indexes[mrt_title] = result
 
+        doc_index_id = get_next_document_id(parent_index_name)
         for table in tables:
             title = entry.replace(".html", "")
 
@@ -473,7 +474,6 @@ def extract_downloaded_tables(directory_name, doc_index_id):
             if "IOPscience" in title:
                 title += f"_T{str(index + 1)}"
 
-            doc_index_id += 1
             metadata["retrieval_date"] = str(date.today())
             if "MNRAS" in title:
                 (
@@ -514,15 +514,17 @@ def extract_downloaded_tables(directory_name, doc_index_id):
             )
             if not json_data:
                 continue
+
             ret_code = append_to_elastic_index(
                 parent_index_name, doc_index_id, json_data
             )
+
             if ret_code == -1:
                 assert False
+            doc_index_id += 1
 
         for mrt_index in mrt_indexes:
-            doc_index_id += 1
             append_to_elastic_index(
                 mrt_parent_index_name, doc_index_id, mrt_indexes[mrt_index]
             )
-    return doc_index_id
+            doc_index_id += 1

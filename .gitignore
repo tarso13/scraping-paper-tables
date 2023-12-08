@@ -31,7 +31,10 @@ MANIFEST
 *.json
 pubs_aanda/
 pubs_mnras/
+pubs_iopscience/
 pubs/
+iopscience_mrts/
+
 *.txt
 # PyInstaller
 #  Usually these files are written by a python script from a template
