@@ -291,7 +291,7 @@ def extract_table_data(
         extra_metadata["table_cols"] = len(list(headers_as_rows[0]))
 
     journal = ""
-    valid_footnotes = {}
+    valid_footnotes = None
 
     if "IOPscience" in title:
         journal = "IOPscience"
@@ -468,7 +468,6 @@ def extract_downloaded_tables(directory_name):
                 write_to_json_file("json_mrts", mrt_title, result)
                 mrt_indexes[mrt_title] = result
 
-        refresh_index(parent_index_name)
         doc_index_id = get_next_document_id(parent_index_name)
         for table in tables:
             title = entry.replace(".html", "")
@@ -527,7 +526,6 @@ def extract_downloaded_tables(directory_name):
             doc_index_id += 1
 
         if mrt_indexes:
-            refresh_index(mrt_parent_index_name)
             mrt_doc_index_id = get_next_document_id(mrt_parent_index_name)
             for mrt_index in mrt_indexes:
                 ret_code = append_to_elastic_index(

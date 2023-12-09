@@ -31,6 +31,17 @@ def adjust_journal_name(journal_name):
     return journal_name
 
 
+# Check if table id exists in query results
+def same_table_id_found(query_results, table_id):
+    query_array = f"[{query_results}]"
+    json_array = json.loads(query_array)
+    for json_obj in json_array:
+        metadata = json_obj.get("metadata", {})
+        if metadata["table_id"] == table_id:
+            return True
+    return False
+
+
 # Gets next available document id to append to index
 def get_next_document_id(index):
     elastic_password = get_password("../elastic_password.txt")
@@ -40,6 +51,7 @@ def get_next_document_id(index):
         basic_auth=["elastic", elastic_password],
     )
 
+    refresh_index(index)
     result = es.count(index=index)
     count = result["count"]
     return count + 1
@@ -66,7 +78,10 @@ def collect_search_results(results):
     for i in range(0, total_hits):
         obj = results["hits"]["hits"][i]["_source"]
         json_formatted_str = json.dumps(obj, indent=4)
-        journals_str += f"{json_formatted_str}"
+        if i != 0:
+            journals_str += f",{json_formatted_str}"
+        else:
+            journals_str += f"{json_formatted_str}"
     return journals_str
 
 
@@ -74,6 +89,11 @@ def collect_search_results(results):
 # Create the parent index
 def create_parent_index(parent_index):
     es = establish_connection_to_index()
+    index_exists = es.indices.exists(index=parent_index)
+
+    if index_exists:
+        return
+
     mapping = {
         "mappings": {
             "properties": {
@@ -92,10 +112,14 @@ def create_parent_index(parent_index):
 # Update the parent index with new content
 def add_document_to_index(parent_index, doc_index_id, content):
     es = establish_connection_to_index()
-    document_exists = es.exists(index=parent_index, id=doc_index_id)
+    doc_id_exists = es.exists(index=parent_index, id=doc_index_id)
+    doi = content["metadata"]["doi"]
+    table_id = content["metadata"]["table_id"]
+    doi_results = search_index_by_doi(doi)
+    doi_found = doi_results != "No results"
+    same_table_exists = doi_found and same_table_id_found(doi_results, table_id)
 
-    if document_exists:
-        print(str(doc_index_id) + " exists already")
+    if doc_id_exists or same_table_exists:
         return -1
 
     es.index(index=parent_index, id=doc_index_id, body=content)
