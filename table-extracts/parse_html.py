@@ -206,14 +206,17 @@ def extract_table_data(
 ):
     json_data = {}
     current_table_info = {}
+    valid_footnotes = {}
 
     if "A&A" in title:
         current_table_info = table_info
 
     if "IOPscience" in title:
+        journal = "IOPscience"
         current_table_info = table_info
         if "notes" in current_table_info and current_table_info["notes"] == "":
             current_table_info.pop("notes")
+        valid_footnotes = search_iopscience_footnotes(table, table_info)
 
     headers_as_rows = []
     key_prefix = ""
@@ -291,11 +294,9 @@ def extract_table_data(
         extra_metadata["table_cols"] = len(list(headers_as_rows[0]))
 
     journal = ""
-    valid_footnotes = None
 
     if "IOPscience" in title:
         journal = "IOPscience"
-        valid_footnotes = footnotes
 
     if "A&A" in title:
         journal = "A&A"
@@ -324,10 +325,10 @@ def extract_table_data(
                 valid_footnotes = validate_aanda_footnotes(
                     footnotes, valid_footnotes, headers
                 )
-            if "IOPscience" in title:
-                valid_footnotes = footnotes
 
-            valid_footnotes = mnras_footnotes
+            if "MNRAS" in title:
+                valid_footnotes = mnras_footnotes
+
             convert_to_json_array(
                 headers_as_row, json_data, key_prefix, valid_footnotes, journal, True
             )
@@ -378,8 +379,7 @@ def extract_table_data(
             valid_footnotes = validate_aanda_footnotes(
                 footnotes, valid_footnotes, data_found
             )
-        if "IOPscience" in title:
-            valid_footnotes = footnotes
+
         convert_to_json_array(
             data_found, json_data, key_prefix, valid_footnotes, journal, False
         )
@@ -465,8 +465,9 @@ def extract_downloaded_tables(directory_name):
                 index = json_results.index(result)
                 mrt_title = mrt_titles[index]
                 result["metadata"]["doi"] = metadata["doi"]
-                write_to_json_file("json_mrts", mrt_title, result)
+                result["metadata"]["table_id"] = f"T{str(index+1)}"
                 mrt_indexes[mrt_title] = result
+                write_to_json_file("json_mrts", mrt_title, result)
 
         doc_index_id = get_next_document_id(parent_index_name)
         for table in tables:
@@ -475,7 +476,7 @@ def extract_downloaded_tables(directory_name):
             index = tables.index(table)
             if "IOPscience" in title:
                 title += f"_T{str(index + 1)}"
-
+            table_info = search_iopscience_table_info(soup_content, index + 1)
             metadata["retrieval_date"] = str(date.today())
             if "MNRAS" in title:
                 (
@@ -522,7 +523,8 @@ def extract_downloaded_tables(directory_name):
             )
 
             if ret_code == -1:
-                assert False
+                continue
+
             doc_index_id += 1
 
         if mrt_indexes:
@@ -532,5 +534,5 @@ def extract_downloaded_tables(directory_name):
                     mrt_parent_index_name, mrt_doc_index_id, mrt_indexes[mrt_index]
                 )
                 if ret_code == -1:
-                    assert False
+                    continue
                 mrt_doc_index_id += 1

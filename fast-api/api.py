@@ -1,4 +1,5 @@
 import sys
+import json
 
 sys.path.append("../table-extracts")
 from fastapi import FastAPI, Request
@@ -14,7 +15,7 @@ from elastic_index import (
     search_index_by_title,
     search_index_by_table_caption,
     search_index_by_word_in_table,
-    search_index_by_doi,
+    search_index_by_doi_all,
     search_index_by_author_and_year,
     search_index_by_author_and_journal,
 )
@@ -68,7 +69,7 @@ async def query(
             index_name = "astro"
             results = search_index_by_word_in_table(index_name, input_search)
         case "doi":
-            results = search_index_by_doi(input_search)
+            results = search_index_by_doi_all(input_search)
         case "author_and_year":
             results = search_index_by_author_and_year(input_search, extra_input_search)
         case "author_and_journal":

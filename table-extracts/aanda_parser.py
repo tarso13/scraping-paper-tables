@@ -107,6 +107,7 @@ def search_aanda_table_info(soup_content):
 def validate_aanda_footnotes(footnotes, valid_footnotes, data_found):
     if not footnotes:
         return None
+    valid_footnotes = {}
     for footnote in footnotes:
         value = footnote.replace("(", "").replace(")", "").replace("^", "")
         int_footnote = value.isnumeric()

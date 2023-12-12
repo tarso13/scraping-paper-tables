@@ -19,6 +19,8 @@ def find_iopscience_footnotes(string):
 
 # Search for footnote in IOPscience list of data and if found, add it to the json object the entry belongs to
 def search_and_add_iopscience_footnote_to_obj(footnotes, data, json_obj, key_prefix):
+    if not data:
+        return
     for footnote in footnotes:
         index = footnotes.index(footnote)
         for key in footnote.keys():
@@ -86,15 +88,15 @@ def search_iopscience_footnotes(soup_content, table_info):
             continue
         sup_value = sup_text.replace("^", "")
         if sup_value.isalpha():
-            identify_iopscience_footnotes(small_tag, footnotes, table_info)
-
+            footnotes = identify_iopscience_footnotes(small_tag, footnotes, table_info)
     return footnotes
 
 
 # Search for table notes in iopscience journal
-def search_iopscience_table_notes(soup_content):
+def search_iopscience_table_notes(soup_content, table_id):
     notes = ""
-    p_tags = soup_content.parent.find_all("p")
+    p_tags = soup_content.find_all("p")
+    count = 0
     for p_tag in p_tags:
         small_tag = p_tag.find("small")
         if small_tag == None:
@@ -102,14 +104,18 @@ def search_iopscience_table_notes(soup_content):
         strong_tag = small_tag.find("strong")
         if strong_tag == None:
             continue
+        count += 1
+        if count - 1 != table_id - 1:
+            continue
         notes = small_tag.get_text().replace("\n", "").replace("  ", "")
+
         return notes
     return notes
 
 
 # Search for table captions in iopscience journal
-def search_iopscience_table_caption(soup_content):
-    p_tags = soup_content.parent.find_all("p")
+def search_iopscience_table_caption(soup_content, table_id):
+    p_tags = soup_content.find_all("p")
     caption = ""
     for p_tag in p_tags:
         b_tag = p_tag.find("b")
@@ -117,17 +123,31 @@ def search_iopscience_table_caption(soup_content):
             continue
         if "Table" not in b_tag.get_text():
             continue
+        if str(table_id) not in b_tag.get_text():
+            continue
         caption = p_tag.get_text().replace(b_tag.get_text(), "").replace("\xa0", EMPTY)
+
         return caption
     return caption
 
 
 # Search for table info in iopscience journal, including notes and caption
-def search_iopscience_table_info(soup_content):
+def search_iopscience_table_info(soup_content, table_id):
     table_info = {}
 
-    table_info["caption"] = search_iopscience_table_caption(soup_content)
+    table_info["caption"] = search_iopscience_table_caption(soup_content, table_id)
+    notes = (
+        search_iopscience_table_notes(soup_content, table_id)
+        .replace(
+            "Only a portion of this table is shown here to demonstrate its form and content. A machine-readable version of the full table is available.",
+            "",
+        )
+        .replace("Notes.", "")
+        .replace("Note.", "")
+    )
 
+    pattern = re.compile(r"\^ ([a-z])")
+    table_info["notes"] = re.sub(pattern, r"^\1", notes).strip()
     return table_info
 
 
