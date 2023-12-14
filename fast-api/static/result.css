@@ -33,6 +33,7 @@ p {
     box-shadow: 9px 6px 4px #150c1a;
     background-color: aliceblue;
     margin-left: 0.3%;
+    margin-top: -3%;
     position: relative;
     overflow: auto;
 }
@@ -40,7 +41,7 @@ p {
 .back-page {
     position: relative;
     margin: auto;
-    margin-top: 2%;
+    margin-top: 1%;
 }
 
 .button {

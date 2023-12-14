@@ -78,7 +78,7 @@ async def query(
             )
         case "author_and_journal":
             results = search_index_by_author_and_journal(
-                input_search, extra_input_search, index_name
+                extra_input_search, input_search, index_name
             )
         case "journal_and_year":
             results = search_index_by_journal_and_year(

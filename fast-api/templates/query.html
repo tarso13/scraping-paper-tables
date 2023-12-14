@@ -14,7 +14,17 @@
       <h4 id="search-type-header"></h4>
       <div class="button-container">
           <form action="/query" method="get" id="query" >
-              <input type="text" name="input_search" id="input_text" value="" class="input" placeholder="Enter {{search_type}}..." required></input>
+              {% if search_type == "author_and_journal" or search_type == "journal_and_year" or search_type == "journal" %}
+              <select name="input_search" id="input_text" class="input" required> 
+                <option value="" selected disabled hidden>Choose Journal</option>
+                <option value="aanda">Astronomy & Astrophysics (A&A)</option>
+                <option value="mnras">Monthly Notices of the Royal Astronomical Society(MNRAS)</option>
+                <option value="the_astronomical_journal">The Astronomical Journal</option>
+                <option value="the_astrophysical_journal">The Astrophysical Journal</option>
+              </select>
+              {% else %}
+                <input type="text" name="input_search" id="input_text" value="" class="input" placeholder="Enter {{search_type}}..." required></input>
+              {% endif %}
               {% if search_type == "year_range" or search_type == "author_and_year" or search_type == "author_and_journal" or search_type == "journal_and_year"  %}
                 <input type="text" name="extra_input_search" id="extra_input_text" value=""
                               class="input" placeholder="" required>

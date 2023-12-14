@@ -61,8 +61,7 @@ function checkPlaceholders(search_type) {
             document.getElementById("extra_input_text").placeholder = "Enter year...";
             break;
         case "author_and_journal":
-            document.getElementById("input_text").placeholder = "Enter author...";
-            document.getElementById("extra_input_text").placeholder = "Enter journal...";
+            document.getElementById("extra_input_text").placeholder = "Enter author...";
             break;
         case "journal_and_year":
             document.getElementById("input_text").placeholder = "Enter journal...";

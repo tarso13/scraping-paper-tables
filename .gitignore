@@ -1,6 +1,7 @@
 table_extracts/publications
 table_extracts/publications_aanda
 table_extracts/publications_iopscience
+table_extracts/pubs_test_mnras
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -33,6 +34,7 @@ pubs_aanda/
 pubs_mnras/
 pubs_iopscience/
 pubs/
+pubs_test_mnras/
 iopscience_mrts/
 
 *.txt

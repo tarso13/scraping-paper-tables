@@ -14,20 +14,14 @@ minimum_results = 0
 # Adjust journal name based on the journal name the user has provided
 # Mostly useful for api use
 def adjust_journal_name(journal_name):
-    possible_mnras = [
-        "MNRAS",
-        "mnras",
-        "Monthly Notices of the Royal Astronomical Society",
-        "mnrasl",
-    ]
-
-    possible_aanda = ["A&A", "a&a", "Astronomy & Astrophysics"]
-
-    if journal_name in possible_mnras:
-        return "mnras"
-
-    if journal_name in possible_aanda:
+    if journal_name == "aanda":
         return "Astronomy & Astrophysics"
+
+    if journal_name == "the_astronomical_journal":
+        return "The Astronomical Journal"
+
+    if journal_name == "the_astrophysical_journal":
+        return "The Astrophysical Journal"
 
     return journal_name
 
@@ -82,7 +76,7 @@ def collect_search_results(results):
             journals_str += f",{obj}"
         else:
             journals_str += f"{obj}"
-    return results
+    return journals_str
 
 
 # Create a connection to Elasticsearch
