@@ -25,6 +25,11 @@
               {% else %}
                 <input type="text" name="input_search" id="input_text" value="" class="input" placeholder="Enter {{search_type}}..." required></input>
               {% endif %}
+              {% if search_type == "doi" %}
+              <label for="mrt_inclusion"> Include mrt tables
+                <input type="checkbox" name="mrt_inclusion" id="extra_mrts" value="mrts"
+                              class="input"></label>
+              {% endif %}
               {% if search_type == "year_range" or search_type == "author_and_year" or search_type == "author_and_journal" or search_type == "journal_and_year"  %}
                 <input type="text" name="extra_input_search" id="extra_input_text" value=""
                               class="input" placeholder="" required>

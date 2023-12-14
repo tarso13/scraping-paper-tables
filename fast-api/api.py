@@ -16,6 +16,7 @@ from elastic_index import (
     search_index_by_table_caption,
     search_index_by_word_in_table,
     search_index_by_doi_all,
+    search_index_by_doi,
     search_index_by_author_and_year,
     search_index_by_author_and_journal,
     search_index_by_journal_and_year,
@@ -50,6 +51,7 @@ async def query(
     input_search: str,
     search_type: str,
     extra_input_search: str = None,
+    mrt_inclusion: str = None,
 ):
     results = None
     index_name = "astro"
@@ -71,7 +73,10 @@ async def query(
         case "word_in_table":
             results = search_index_by_word_in_table(index_name, input_search)
         case "doi":
-            results = search_index_by_doi_all(input_search)
+            if mrt_inclusion:
+                results = search_index_by_doi_all(input_search)
+            else:
+                results = search_index_by_doi(input_search, index_name)
         case "author_and_year":
             results = search_index_by_author_and_year(
                 input_search, extra_input_search, index_name
