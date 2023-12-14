@@ -96,8 +96,8 @@ def search_metadata(soup_content):
             case "citation_doi":
                 if not "doi" in metadata:
                     metadata["doi"] = content
-    if not "author(s)" in metadata:
-        metadata["author(s)"] = authors
+    if not "authors" in metadata:
+        metadata["authors"] = authors
     return metadata
 
 
@@ -261,6 +261,7 @@ def extract_table_data(
         if f"_{table_suffix}" not in title:
             title += f"_{table_suffix}"
         metadata["table_id"] = table_suffix
+        metadata["journal"] = "mnras"
         current_table_info = search_mnras_table_info_and_footnotes(table)
     else:
         table_id = extract_table_id(title)
@@ -476,7 +477,8 @@ def extract_downloaded_tables(directory_name):
             index = tables.index(table)
             if "IOPscience" in title:
                 title += f"_T{str(index + 1)}"
-            table_info = search_iopscience_table_info(soup_content, index + 1)
+                table_info = search_iopscience_table_info(soup_content, index + 1)
+
             metadata["retrieval_date"] = str(date.today())
             if "MNRAS" in title:
                 (

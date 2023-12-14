@@ -18,12 +18,12 @@ from elastic_index import (
     search_index_by_doi_all,
     search_index_by_author_and_year,
     search_index_by_author_and_journal,
+    search_index_by_journal_and_year,
 )
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 templates = Jinja2Templates(directory="templates")
 
 
@@ -52,29 +52,37 @@ async def query(
     extra_input_search: str = None,
 ):
     results = None
+    index_name = "astro"
     match search_type:
         case "title":
-            results = search_index_by_title(input_search)
+            results = search_index_by_title(input_search, index_name)
         case "author":
-            results = search_index_by_author(input_search)
+            results = search_index_by_author(input_search, index_name)
         case "year_range":
-            results = search_index_by_year_range(input_search, extra_input_search)
+            results = search_index_by_year_range(
+                input_search, extra_input_search, index_name
+            )
         case "year":
-            results = search_index_by_year(input_search)
+            results = search_index_by_year(input_search, index_name)
         case "journal":
-            results = search_index_by_journal(input_search)
+            results = search_index_by_journal(input_search, index_name)
         case "table_caption":
-            results = search_index_by_table_caption(input_search)
+            results = search_index_by_table_caption(input_search, index_name)
         case "word_in_table":
-            index_name = "astro"
             results = search_index_by_word_in_table(index_name, input_search)
         case "doi":
             results = search_index_by_doi_all(input_search)
         case "author_and_year":
-            results = search_index_by_author_and_year(input_search, extra_input_search)
+            results = search_index_by_author_and_year(
+                input_search, extra_input_search, index_name
+            )
         case "author_and_journal":
             results = search_index_by_author_and_journal(
-                input_search, extra_input_search
+                input_search, extra_input_search, index_name
+            )
+        case "journal_and_year":
+            results = search_index_by_journal_and_year(
+                input_search, extra_input_search, index_name
             )
 
     return templates.TemplateResponse(

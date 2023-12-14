@@ -18,6 +18,7 @@ def adjust_journal_name(journal_name):
         "MNRAS",
         "mnras",
         "Monthly Notices of the Royal Astronomical Society",
+        "mnrasl",
     ]
 
     possible_aanda = ["A&A", "a&a", "Astronomy & Astrophysics"]
@@ -71,18 +72,17 @@ def establish_connection_to_index():
 
 
 def collect_search_results(results):
-    if results["hits"]["total"]["value"] == 0:
+    total_hits = results["hits"]["total"]["value"]
+    if total_hits == 0:
         return "No results."
-    total_hits = len(results["hits"]["hits"])
     journals_str = ""
     for i in range(0, total_hits):
         obj = results["hits"]["hits"][i]["_source"]
-        json_formatted_str = json.dumps(obj, indent=4)
         if i != 0:
-            journals_str += f",{json_formatted_str}"
+            journals_str += f",{obj}"
         else:
-            journals_str += f"{json_formatted_str}"
-    return journals_str
+            journals_str += f"{obj}"
+    return results
 
 
 # Create a connection to Elasticsearch
@@ -124,7 +124,7 @@ def add_document_to_index(parent_index, doc_index_id, content):
 
 # Create a connection to Elasticsearch
 # Search documents by title
-def search_index_by_title(title, maximum_results=2000):
+def search_index_by_title(title, parent_index, maximum_results=10000):
     es = establish_connection_to_index()
 
     query = {
@@ -133,13 +133,13 @@ def search_index_by_title(title, maximum_results=2000):
         "query": {"match_phrase": {"metadata.paper_title": title}},
     }
 
-    results = es.search(body=query)
+    results = es.search(index=parent_index, body=query)
 
     return collect_search_results(results)
 
 
 # Search documents by word in their content
-def search_index_by_word_in_table(parent_index, word, maximum_results=2000):
+def search_index_by_word_in_table(parent_index, word, maximum_results=10000):
     es = establish_connection_to_index()
 
     query = {
@@ -158,7 +158,7 @@ def search_index_by_word_in_table(parent_index, word, maximum_results=2000):
 
 # Create a connection to Elasticsearch
 # Search documents by brief notes on table caption
-def search_index_by_table_caption(content, maximum_results=2000):
+def search_index_by_table_caption(content, parent_index, maximum_results=10000):
     es = establish_connection_to_index()
 
     query = {
@@ -167,7 +167,7 @@ def search_index_by_table_caption(content, maximum_results=2000):
         "query": {"match": {"table_info.caption": content}},
     }
 
-    results = es.search(body=query)
+    results = es.search(index=parent_index, body=query)
     return collect_search_results(results)
 
 
@@ -182,7 +182,7 @@ def refresh_index(index_name):
 # The journals returned have publication date greater or equal to start_date given
 # and less or equal to end_date given
 # Note: Date should be either in yyyy-mm-dd or yyyy/mm/dd format
-def search_index_by_date(start_date, end_date, maximum_results=2000):
+def search_index_by_date(start_date, end_date, parent_index, maximum_results=10000):
     es = establish_connection_to_index()
 
     formatted_start_date = format_date(start_date)
@@ -201,29 +201,31 @@ def search_index_by_date(start_date, end_date, maximum_results=2000):
         },
     }
 
-    results = es.search(body=query)
+    results = es.search(index=parent_index, body=query)
     return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
 # Search documents by year
-def search_index_by_year(year, maximum_results=2000):
+def search_index_by_year(year, parent_index, maximum_results=10000):
     start_date = format_date(f"{str(year)}-01-01")
     end_date = format_date(f"{str(year)}-12-31")
-    return search_index_by_date(start_date, end_date, maximum_results)
+    return search_index_by_date(start_date, end_date, parent_index, maximum_results)
 
 
 # Create a connection to Elasticsearch
 # Search documents by year range
-def search_index_by_year_range(start_year, end_year, maximum_results=2000):
+def search_index_by_year_range(
+    start_year, end_year, parent_index, maximum_results=10000
+):
     start_date = format_date(f"{str(start_year)}-01-01")
     end_date = format_date(f"{str(end_year)}-12-31")
-    return search_index_by_date(start_date, end_date, maximum_results)
+    return search_index_by_date(start_date, end_date, parent_index, maximum_results)
 
 
 # Create a connection to Elasticsearch
 # Search documents by journal name
-def search_index_by_journal(journal, maximum_results=2000):
+def search_index_by_journal(journal, parent_index, maximum_results=10000):
     es = establish_connection_to_index()
     journal_name = adjust_journal_name(journal)
     query = {
@@ -232,26 +234,26 @@ def search_index_by_journal(journal, maximum_results=2000):
         "query": {"match_phrase": {"metadata.journal": journal_name}},
     }
 
-    results = es.search(body=query)
+    results = es.search(index=parent_index, body=query)
     return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
 # Search documents by author name
-def search_index_by_author(author, maximum_results=2000):
+def search_index_by_author(author, parent_index, maximum_results=10000):
     es = establish_connection_to_index()
 
     query = {
         "from": minimum_results,
         "size": maximum_results,
-        "query": {"match": {"metadata.author(s)": author}},
+        "query": {"match": {"metadata.authors": author}},
     }
 
-    results = es.search(body=query)
-    return collect_search_results(results)
+    results = es.search(index=parent_index, body=query)
+    return results
 
 
-def search_index_by_doi_all(doi, maximum_results=2000):
+def search_index_by_doi_all(doi, maximum_results=10000):
     es = establish_connection_to_index()
 
     query = {
@@ -266,7 +268,7 @@ def search_index_by_doi_all(doi, maximum_results=2000):
 
 # Create a connection to Elasticsearch
 # Search documents by paper doi
-def search_index_by_doi(parent_index, doi, maximum_results=2000):
+def search_index_by_doi(doi, parent_index, maximum_results=10000):
     es = establish_connection_to_index()
 
     query = {
@@ -281,7 +283,9 @@ def search_index_by_doi(parent_index, doi, maximum_results=2000):
 
 # Create a connection to Elasticsearch
 # Search documents by author name and journal
-def search_index_by_author_and_journal(author, journal, maximum_results=2000):
+def search_index_by_author_and_journal(
+    author, journal, parent_index, maximum_results=10000
+):
     es = establish_connection_to_index()
     journal_name = adjust_journal_name(journal)
     query = {
@@ -290,20 +294,20 @@ def search_index_by_author_and_journal(author, journal, maximum_results=2000):
         "query": {
             "bool": {
                 "must": [
-                    {"match": {"metadata.author(s)": author}},
+                    {"match": {"metadata.authors": author}},
                     {"match": {"metadata.journal": journal_name}},
                 ]
             }
         },
     }
 
-    results = es.search(body=query)
+    results = es.search(index=parent_index, body=query)
     return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
 # Search documents by author name and year
-def search_index_by_author_and_year(author, year, maximum_results=2000):
+def search_index_by_author_and_year(author, year, parent_index, maximum_results=10000):
     es = establish_connection_to_index()
     start_date = format_date(f"{str(year)}-01-01")
     end_date = format_date(f"{str(year)}-12-31")
@@ -313,7 +317,7 @@ def search_index_by_author_and_year(author, year, maximum_results=2000):
         "query": {
             "bool": {
                 "must": [
-                    {"match": {"metadata.author(s)": author}},
+                    {"match": {"metadata.authors": author}},
                     {
                         "range": {
                             "metadata.date": {
@@ -327,7 +331,39 @@ def search_index_by_author_and_year(author, year, maximum_results=2000):
         },
     }
 
-    results = es.search(body=query)
+    results = es.search(index=parent_index, body=query)
+    return collect_search_results(results)
+
+
+# Create a connection to Elasticsearch
+# Search documents by brief notes on table caption
+def search_index_by_journal_and_year(
+    journal, year, parent_index, maximum_results=10000
+):
+    es = establish_connection_to_index()
+    start_date = format_date(f"{str(year)}-01-01")
+    end_date = format_date(f"{str(year)}-12-31")
+    query = {
+        "from": minimum_results,
+        "size": maximum_results,
+        "query": {
+            "bool": {
+                "must": [
+                    {"match_phrase": {"metadata.journal": journal}},
+                    {
+                        "range": {
+                            "metadata.date": {
+                                "gte": start_date,
+                                "lte": end_date,
+                            }
+                        }
+                    },
+                ]
+            }
+        },
+    }
+
+    results = es.search(index=parent_index, body=query)
     return collect_search_results(results)
 
 

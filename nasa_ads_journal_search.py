@@ -42,7 +42,11 @@ def search_ads_by_journal(journal_abbr, return_value, results):
         fields = f"{return_value} property:pub_openaccess"
     else:
         fields = return_value
-    query = {"q": f"bibstem:{journal_abbr}", "fl": fields, "rows": results}
+    query = {
+        "q": f"bibstem:{journal_abbr}",
+        "fl": fields,
+        "rows": results,
+    }
     encoded_query = urlencode(query)
     query_results = get_ads_query_results(encoded_query)
     bibcodes = extract_bibcode_from_results(query_results, results)
@@ -90,8 +94,16 @@ def get_ads_query_results(encoded_query):
 def extract_bibcode_from_results(query_results, number_of_results):
     bibcodes = []
     json_results = query_results.json()
+    if not "response" in json_results:
+        print("No papers were found!")
+        return bibcodes
     json_response = json_results["response"]
+    # print(json_response)
     json_docs = json_response["docs"]
+    # print(json_docs)
+    if not len(json_docs):
+        print("No papers were found!")
+        return bibcodes
     # extract bibcode bibcode kv is in the form:
     # { "bibcode" : 'xxxxxxxxxx'}
     for i in range(number_of_results):
@@ -141,24 +153,32 @@ def extract_urls_from_bibcodes(bibcodes, format):
 def main():
     number_of_results = 2000
 
-    # print('Searching by keyword...')
-    # keyword_results = search_ads_by_keyword('SNR', 'bibcode', number_of_results)
-    # print(keyword_results)
+    print("Searching by keyword...")
+    keyword_results = search_ads_by_keyword("SNR", "bibcode", number_of_results)
+    print(keyword_results)
 
-    # print('Searching by journal...')
-    # journal_results = search_ads_by_journal('A&A', 'bibcode', number_of_results)
-    # print(journal_results)
+    print("Searching by journal...")
+    journal_results = search_ads_by_journal("A&A", "bibcode", number_of_results)
+    print(journal_results)
 
-    # print("Searching by journal (A&A) in specific period of time...")
-    # journal_time_results = search_ads_journal_by_period_of_time(
-    #     "A&A", 2022, 2022, "bibcode", number_of_results
-    # )
+    print("Searching by journal (A&A) in specific period of time...")
+    journal_time_results = search_ads_journal_by_period_of_time(
+        "A&A", 2022, 2022, "bibcode", number_of_results
+    )
+    print(journal_time_results)
 
     print("Searching by journal (MNRAS) in specific period of time...")
     journal_time_results = search_ads_journal_by_period_of_time(
         "MNRAS", 2022, 2022, "bibcode", number_of_results
     )
-    # print(journal_time_results)
+    print(journal_time_results)
+
+    print("Searching by journal...")
+    journal_results = search_ads_by_journal(
+        "A&A",
+        "bibcode",
+    )
+    print(journal_results)
 
 
 main()
