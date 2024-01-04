@@ -480,6 +480,7 @@ def extract_downloaded_tables(directory_name):
                 table_info = search_iopscience_table_info(soup_content, index + 1)
 
             metadata["retrieval_date"] = str(date.today())
+            metadata["openaccess"] = "true"
             if "MNRAS" in title:
                 (
                     publication_date,

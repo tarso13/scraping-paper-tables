@@ -1,6 +1,7 @@
 from password import get_password
 import requests
 from urllib.parse import urlencode
+import os
 
 format = "HTML"
 
@@ -145,6 +146,18 @@ def extract_urls_from_bibcodes(bibcodes, format):
     return urls
 
 
+def write_urls_to_file(filename, directory, urls):
+    file_path = os.path.join(directory, filename)
+
+    with open(file_path, "w") as file:
+        for url in urls:
+            index = urls.index(url)
+            if len(urls) == index + 1:
+                file.write(url)
+            else:
+                file.write(url + ",")
+
+
 # A simple example of seraching for 15 journals
 # a) by keyword
 # b) by journal type
@@ -153,32 +166,33 @@ def extract_urls_from_bibcodes(bibcodes, format):
 def main():
     number_of_results = 2000
 
-    print("Searching by keyword...")
-    keyword_results = search_ads_by_keyword("SNR", "bibcode", number_of_results)
-    print(keyword_results)
+    # print("Searching by keyword...")
+    # keyword_results = search_ads_by_keyword("SNR", "bibcode", number_of_results)
+    # print(keyword_results)
 
-    print("Searching by journal...")
-    journal_results = search_ads_by_journal("A&A", "bibcode", number_of_results)
-    print(journal_results)
+    # print("Searching by journal...")
+    # journal_results = search_ads_by_journal("A&A", "bibcode", number_of_results)
+    # print(journal_results)
 
     print("Searching by journal (A&A) in specific period of time...")
     journal_time_results = search_ads_journal_by_period_of_time(
         "A&A", 2022, 2022, "bibcode", number_of_results
     )
-    print(journal_time_results)
+    write_urls_to_file("aanda_2022.txt", "table-extracts", journal_time_results)
 
     print("Searching by journal (MNRAS) in specific period of time...")
     journal_time_results = search_ads_journal_by_period_of_time(
         "MNRAS", 2022, 2022, "bibcode", number_of_results
     )
-    print(journal_time_results)
 
-    print("Searching by journal...")
-    journal_results = search_ads_by_journal(
-        "A&A",
-        "bibcode",
-    )
-    print(journal_results)
+    write_urls_to_file("mnras_2022.txt", "table-extracts", journal_time_results)
+
+    # print("Searching by journal...")
+    # journal_results = search_ads_by_journal(
+    #     "A&A",
+    #     "bibcode",
+    # )
+    # print(journal_results)
 
 
 main()
