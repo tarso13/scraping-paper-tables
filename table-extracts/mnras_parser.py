@@ -39,6 +39,21 @@ def extract_mnras_extra_metadata(soup_content):
     return None, None, None, None, None
 
 
+def find_mnras_access_property(soup_content):
+    title_wrap = soup_content.find("div", class_="title-wrap")
+    header = title_wrap.find("h1")
+    access = header.find("i")
+    access_class = access.get("class")
+    if not len(access_class):
+        return "purchased"
+    access_property = access_class[0]
+    if access_property == "icon-availability_open":
+        return "open"
+    if access_property == "icon-availability_free":
+        return "free"
+    return "purchased"
+
+
 # Search for footnote in MNRAs list of data and if found, add it to the json object the entry belongs to
 def search_and_add_mnras_footnote_to_obj(footnotes, data, json_obj):
     valid_footnotes = {}

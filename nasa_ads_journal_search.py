@@ -184,14 +184,10 @@ def main():
     journal_time_results = search_ads_journal_by_period_of_time(
         "MNRAS", 2022, 2022, "bibcode", number_of_results
     )
-
     write_urls_to_file("mnras_2022.txt", "table-extracts", journal_time_results)
 
     # print("Searching by journal...")
-    # journal_results = search_ads_by_journal(
-    #     "A&A",
-    #     "bibcode",
-    # )
+    # journal_results = search_ads_by_journal("A&A", "bibcode", number_of_results)
     # print(journal_results)
 
 

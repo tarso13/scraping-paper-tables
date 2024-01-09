@@ -28,11 +28,13 @@ def adjust_journal_name(journal_name):
 
 # Check if table id exists in query results
 def same_table_id_found(query_results, table_id):
-    query_array = f"[{query_results}]"
-    json_array = json.loads(query_array)
-    for json_obj in json_array:
-        metadata = json_obj["metadata"]
-        if metadata["table_id"] == table_id:
+    total_hits = query_results["hits"]["total"]["value"]
+    if total_hits == 0:
+        return False
+    for i in range(0, total_hits):
+        obj = query_results["hits"]["hits"][i]["_source"]
+        metadata = obj.get("metadata", {})
+        if metadata.get("table_id") == table_id:
             return True
     return False
 
@@ -108,7 +110,7 @@ def add_document_to_index(parent_index, doc_index_id, content):
     es = establish_connection_to_index()
     doi = content["metadata"]["doi"]
     table_id = content["metadata"]["table_id"]
-    doi_results = search_index_by_doi(parent_index, doi)
+    doi_results = search_index_by_doi_to_insert(doi, parent_index)
     if doi_results != "No results.":
         if same_table_id_found(doi_results, table_id):
             return -1
@@ -273,6 +275,23 @@ def search_index_by_doi(doi, parent_index, maximum_results=10000):
 
     results = es.search(index=parent_index, body=query)
     return collect_search_results(results)
+
+
+# Create a connection to Elasticsearch
+# Search documents by paper doi to insert a document
+# This function does not format the results to enable processing of
+# the metadata object before uploading
+def search_index_by_doi_to_insert(doi, parent_index, maximum_results=10000):
+    es = establish_connection_to_index()
+
+    query = {
+        "from": minimum_results,
+        "size": maximum_results,
+        "query": {"match_phrase": {"metadata.doi": doi}},
+    }
+
+    results = es.search(index=parent_index, body=query)
+    return results
 
 
 # Create a connection to Elasticsearch

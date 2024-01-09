@@ -22,7 +22,7 @@ def get_file_content(filepath):
     return content
 
 
-# Include '^' in sup tags text indicating power exponentiation
+# Include "^" in sup tags text indicating power exponentiation
 def replace_sup_tags(soup_content):
     sup_tags = soup_content.find_all("sup")
     if sup_tags == None:
@@ -36,7 +36,7 @@ def replace_sup_tags(soup_content):
     return soup_content
 
 
-# Include '_' in sub tags text indicating subscripts
+# Include "_" in sub tags text indicating subscripts
 def replace_sub_tags(soup_content):
     sub_tags = soup_content.find_all("sub")
     if sub_tags == None:
@@ -165,7 +165,7 @@ def include_extra_metadata_json_data(extra_metadata, metadata, json_data):
 
 # Extract table id from title using regex
 def extract_table_id(title):
-    # The regular expression pattern for '_T' followed by one or more digits (\d+)
+    # The regular expression pattern for "_T" followed by one or more digits (\d+)
     pattern = r"_T\d+"
     table_ids = re.findall(pattern, title)
     if not table_ids:
@@ -388,7 +388,7 @@ def extract_table_data(
     keys = list(json_data["metadata"].keys())
     keys.sort()
     json_data["metadata"] = {i: json_data["metadata"][i] for i in keys}
-
+    print("Writing to file.. " + title)
     write_to_json_file("json_results", f"{title}", json_data)
     return json_data
 
@@ -480,7 +480,7 @@ def extract_downloaded_tables(directory_name):
                 table_info = search_iopscience_table_info(soup_content, index + 1)
 
             metadata["retrieval_date"] = str(date.today())
-            metadata["openaccess"] = "true"
+            metadata["paper_access_property"] = "open"
             if "MNRAS" in title:
                 (
                     publication_date,
@@ -495,6 +495,10 @@ def extract_downloaded_tables(directory_name):
                 metadata["authors"] = authors
                 metadata["doi"] = doi
                 metadata["paper_title"] = paper_title
+                metadata["paper_access_property"] = find_mnras_access_property(
+                    soup_content
+                )
+
                 if (
                     not publication_date
                     or not journal
