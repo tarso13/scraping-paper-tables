@@ -70,8 +70,6 @@ async def query(
             results = search_index_by_journal(input_search, index_name)
         case "table_caption":
             results = search_index_by_table_caption(input_search, index_name)
-        case "word_in_table":
-            results = search_index_by_word_in_table(index_name, input_search)
         case "doi":
             if mrt_inclusion:
                 results = search_index_by_doi_all(input_search)

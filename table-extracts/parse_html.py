@@ -423,7 +423,7 @@ def extract_downloaded_tables(directory_name):
 
     for entry in os.listdir(directory_name):
         path_to_entry = os.path.join(directory_name, entry)
-        # os.listdir returns both directories and files included in diretory given
+
         if os.path.isfile(path_to_entry) == False:
             continue
 
@@ -528,6 +528,7 @@ def extract_downloaded_tables(directory_name):
                 table_info,
                 supplements[index],
             )
+
             if not json_data:
                 continue
 

@@ -1,6 +1,7 @@
 from elasticsearch import Elasticsearch
 import sys
 import json
+import time
 
 sys.path.append("../")
 from password import get_password
@@ -69,16 +70,11 @@ def establish_connection_to_index():
 
 def collect_search_results(results):
     total_hits = results["hits"]["total"]["value"]
+
     if total_hits == 0:
         return "No results."
-    journals_str = ""
-    for i in range(0, total_hits):
-        obj = results["hits"]["hits"][i]["_source"]
-        if i != 0:
-            journals_str += f",{obj}"
-        else:
-            journals_str += f"{obj}"
-    return journals_str
+
+    return results["hits"]["hits"]
 
 
 # Create a connection to Elasticsearch
@@ -131,7 +127,7 @@ def search_index_by_title(title, parent_index, maximum_results=10000):
 
     results = es.search(index=parent_index, body=query)
 
-    return results
+    return collect_search_results(results)
 
 
 # Search documents by word in their content
@@ -149,7 +145,7 @@ def search_index_by_word_in_table(parent_index, word, maximum_results=10000):
     except:
         return "Try another word/phrase. It is likely that there are too many matches."
 
-    return results
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -164,7 +160,7 @@ def search_index_by_table_caption(content, parent_index, maximum_results=10000):
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Force refresh index to make sure it is updated
@@ -198,7 +194,7 @@ def search_index_by_date(start_date, end_date, parent_index, maximum_results=100
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -231,7 +227,7 @@ def search_index_by_journal(journal, parent_index, maximum_results=10000):
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -246,7 +242,7 @@ def search_index_by_author(author, parent_index, maximum_results=10000):
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 def search_index_by_doi_all(doi, maximum_results=10000):
@@ -259,7 +255,7 @@ def search_index_by_doi_all(doi, maximum_results=10000):
     }
 
     results = es.search(body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -274,7 +270,7 @@ def search_index_by_doi(doi, parent_index, maximum_results=10000):
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -315,7 +311,7 @@ def search_index_by_author_and_journal(
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -345,7 +341,7 @@ def search_index_by_author_and_year(author, year, parent_index, maximum_results=
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Create a connection to Elasticsearch
@@ -377,7 +373,7 @@ def search_index_by_journal_and_year(
     }
 
     results = es.search(index=parent_index, body=query)
-    return results
+    return collect_search_results(results)
 
 
 # Format date in order to guarantee its type in elastic document

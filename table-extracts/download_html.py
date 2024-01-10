@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import json
 import time
 import random
+from datetime import datetime, date
 
 from parse_html import (
     extract_table_data,
@@ -237,27 +238,28 @@ def download_extra_html_files(directory_name, url_suffixes, download_extra_files
 
 # Extract all table data found in html content without downloading the extra files and print them
 def extract_undownloaded_tables(content, title, entry):
-    parent_index = ""
     soup_content = BeautifulSoup(content, "html.parser")
 
     tables, _ = extract_html_tables(soup_content)
 
-    parent_index = "astro"
+    parent_index_name = "astro"
     footnotes = None
     metadata = {}
     extra_metadata = {}
     table_info = {}
 
     if "A&A" in title:
-        footnotes = search_aanda_footnotes(soup_content)
-        table_info = search_aanda_table_info(soup_content)
         metadata = search_aanda_journal_metadata(entry)
+        d = datetime.strptime(metadata["date"], "%Y-%m-%d")
+        year = d.year
+        footnotes = search_aanda_footnotes(soup_content, year)
+        table_info = search_aanda_table_info(soup_content)
+
+    metadata["retrieval_date"] = str(date.today())
+    metadata["paper_access_property"] = "open"
 
     for table in tables:
         index = tables.index(table)
-
-        global doc_index_id
-        doc_index_id += 1
 
         json_data = extract_table_data(
             table,
@@ -269,4 +271,15 @@ def extract_undownloaded_tables(content, title, entry):
             index,
             "false",
         )
-        append_to_elastic_index(parent_index, doc_index_id, json_data)
+
+        if not json_data:
+            continue
+
+        ret_code = append_to_elastic_index(parent_index_name, doc_index_id, json_data)
+
+        if ret_code == -1:
+            continue
+
+        doc_index_id += 1
+
+        append_to_elastic_index(parent_index_name, doc_index_id, json_data)
