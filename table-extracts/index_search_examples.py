@@ -13,7 +13,7 @@ from elastic_index import (
 def main():
     parent_index = "astro"
     author = "Liodakis"
-    journal = "mnras"
+    journal = "Astronomy & Astrophysics"
     title = "Investigating the origin of stellar masses"
     content = "CMFs and predicted IMFs"
     year = 2022

@@ -388,10 +388,10 @@ def extract_table_data(
     keys = list(json_data["metadata"].keys())
     keys.sort()
     json_data["metadata"] = {i: json_data["metadata"][i] for i in keys}
-    path_to_json = os.path.join("json_aanda_results", f"{title}.json")
+    path_to_json = os.path.join("json_results", f"{title}.json")
     if os.path.exists(path_to_json):
         return None
-    write_to_json_file("json_aanda_results", f"{title}", json_data)
+    write_to_json_file("json_results", f"{title}", json_data)
     return json_data
 
 
