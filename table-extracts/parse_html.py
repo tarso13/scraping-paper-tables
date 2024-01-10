@@ -388,8 +388,10 @@ def extract_table_data(
     keys = list(json_data["metadata"].keys())
     keys.sort()
     json_data["metadata"] = {i: json_data["metadata"][i] for i in keys}
-    print("Writing to file.. " + title)
-    write_to_json_file("json_results", f"{title}", json_data)
+    path_to_json = os.path.join("json_aanda_results", f"{title}.json")
+    if os.path.exists(path_to_json):
+        return None
+    write_to_json_file("json_aanda_results", f"{title}", json_data)
     return json_data
 
 
@@ -400,6 +402,8 @@ def write_to_json_file(directory_name, title, json_data):
     if not os.path.isdir(directory_name):
         os.mkdir(directory_name)
     path_to_json = os.path.join(directory_name, f"{title}.json")
+    if os.path.exists(path_to_json):
+        return
     file = open(path_to_json, "w", encoding="utf-8")
     file.write(json.dumps(json_data, indent=1))
 
@@ -438,6 +442,8 @@ def extract_downloaded_tables(directory_name):
             continue
 
         tables, supplements = extract_html_tables(soup_content)
+        if not len(tables):
+            continue
         footnotes = None
         metadata = {}
         extra_metadata = {}
