@@ -59,8 +59,9 @@ def search_ads_by_journal(journal_abbr, return_value, results):
 # which can be found here: https://adsabs.harvard.edu/abs_doc/journals1.html#
 # Return value is what the user wants to retrive, e.g. title, bibcode, etc.
 # whilst results is the number of results (up to 2000)
+# file is an optional parameter in case the results need to be written to a file
 def search_ads_journal_by_period_of_time(
-    journal_abbr, start_year, end_year, return_value, results
+    journal_abbr, start_year, end_year, return_value, results, file
 ):
     period_of_time = f"year:[{str(start_year)} TO {str(end_year)}]"
     fields = ""
@@ -77,7 +78,7 @@ def search_ads_journal_by_period_of_time(
     encoded_query = urlencode(query)
     query_results = get_ads_query_results(encoded_query)
     bibcodes = extract_bibcode_from_results(query_results, results)
-    urls = extract_urls_from_bibcodes(bibcodes, format)
+    urls = extract_urls_from_bibcodes(bibcodes, format, file)
     return urls
 
 
@@ -136,26 +137,36 @@ def extract_url_from_bibcode(bibcode, format):
 
 # Extract ads urls for given bibcodes and format
 # Bibcodes is a list with bibcodes to be extracted
+# File is an optional parameter specifying a file to write the urls
 # Note: format should either be "HTML" or "PDF" (Use capital letters in order for api to work)
-def extract_urls_from_bibcodes(bibcodes, format):
+def extract_urls_from_bibcodes(bibcodes, format, file):
     urls = []
     for bibcode in bibcodes:
         url = extract_url_from_bibcode(bibcode, format)
         urls.append(url)
+        if file:
+            bibcode_index = bibcodes.index(bibcode)
+            if bibcode_index == len(bibcodes) - 1:
+                write_url_to_file(file, url, True)
+            else:
+                write_url_to_file(file, url, False)
         print(url)
     return urls
 
 
-def write_urls_to_file(filename, directory, urls):
+# Initialize and create the file for writing
+def initialize_and_open_file(directory, filename):
     file_path = os.path.join(directory, filename)
+    f = open(file_path, "w")
+    return f
 
-    with open(file_path, "w") as file:
-        for url in urls:
-            index = urls.index(url)
-            if len(urls) == index + 1:
-                file.write(url)
-            else:
-                file.write(url + ",")
+
+# Write url to file
+# Each line is a url
+def write_url_to_file(file, url, last_url):
+    file.write(url + "\n")
+    if last_url:
+        file.close()
 
 
 # A simple example of seraching for 15 journals
@@ -175,16 +186,23 @@ def main():
     # print(journal_results)
 
     print("Searching by journal (A&A) in specific period of time...")
+    directory_name = "table-extracts"
+    filename = "aanda_2022.txt"
+    aanda_file = initialize_and_open_file(directory_name, filename)
     journal_time_results = search_ads_journal_by_period_of_time(
-        "A&A", 2022, 2022, "bibcode", number_of_results
+        "A&A", 2022, 2022, "bibcode", 2, aanda_file
     )
-    write_urls_to_file("aanda_2022.txt", "table-extracts", journal_time_results)
+    # print(journal_time_results)
 
     print("Searching by journal (MNRAS) in specific period of time...")
+    filename = "mnras_2022.txt"
+    mnras_file = initialize_and_open_file(directory_name, filename)
     journal_time_results = search_ads_journal_by_period_of_time(
-        "MNRAS", 2022, 2022, "bibcode", number_of_results
+        "MNRAS", 2022, 2022, "bibcode", number_of_results, mnras_file
     )
-    write_urls_to_file("mnras_2022.txt", "table-extracts", journal_time_results)
+
+    # print(journal_time_results)
+    # write_urls_to_file("mnras_2022.txt", "table-extracts", journal_time_results)
 
     # print("Searching by journal...")
     # journal_results = search_ads_by_journal("A&A", "bibcode", number_of_results)
