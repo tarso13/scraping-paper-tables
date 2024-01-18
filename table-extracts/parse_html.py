@@ -199,8 +199,8 @@ def reorganise_headers_as_rows(headers_as_rows, empty_row_cell):
 
 # Extract all table data by reading the table headers first,
 # and then all table rows as well as their data
-# All row data extracted are printed as lists
-# and then converted into json files
+# All row data extracted are gathered as lists
+# and then converted to json files
 def extract_table_data(
     table, title, footnotes, metadata, extra_metadata, table_info, supplementary
 ):
@@ -216,7 +216,7 @@ def extract_table_data(
         current_table_info = table_info
         if "notes" in current_table_info and current_table_info["notes"] == "":
             current_table_info.pop("notes")
-        valid_footnotes = search_iopscience_footnotes(table, table_info)
+        valid_footnotes = footnotes
 
     headers_as_rows = []
     key_prefix = ""
@@ -294,11 +294,6 @@ def extract_table_data(
     if len(headers_as_rows):
         extra_metadata["table_cols"] = len(list(headers_as_rows[0]))
 
-    journal = ""
-
-    if "IOPscience" in title:
-        journal = "IOPscience"
-
     if "A&A" in title:
         journal = "A&A"
         if len(headers_as_rows):
@@ -309,14 +304,7 @@ def extract_table_data(
     if "MNRAS" in title:
         journal = "mnras"
         valid_footnotes = mnras_footnotes
-
-    if journal == "mnras":
         headers_as_rows = mnras_headers
-
-    if headers_as_rows:
-        convert_to_json_array(
-            headers_as_rows[0], json_data, f"row1", valid_footnotes, journal, True
-        )
 
     if len(headers_as_rows):
         for headers_as_row in headers_as_rows:
@@ -327,13 +315,12 @@ def extract_table_data(
                     footnotes, valid_footnotes, headers
                 )
 
-            if "MNRAS" in title:
-                valid_footnotes = mnras_footnotes
-
             convert_to_json_array(
                 headers_as_row, json_data, key_prefix, valid_footnotes, journal, True
             )
+
     cell_to_add = {}
+
     for row in table_rows:
         row_index = table_rows.index(row) + 1
         index = row_index
@@ -388,10 +375,12 @@ def extract_table_data(
     keys = list(json_data["metadata"].keys())
     keys.sort()
     json_data["metadata"] = {i: json_data["metadata"][i] for i in keys}
+
     path_to_json = os.path.join("json_results", f"{title}.json")
     if os.path.exists(path_to_json):
         return None
     write_to_json_file("json_results", f"{title}", json_data)
+
     return json_data
 
 
@@ -442,8 +431,10 @@ def extract_downloaded_tables(directory_name):
             continue
 
         tables, supplements = extract_html_tables(soup_content)
+
         if not len(tables):
             continue
+
         footnotes = None
         metadata = {}
         extra_metadata = {}
@@ -463,7 +454,6 @@ def extract_downloaded_tables(directory_name):
 
         if "IOPscience" in entry:
             metadata = extract_journal_metadata(soup_content)
-
             mrt_titles, json_results = extract_iopscience_mrt_tables(
                 soup_content, "iopscience_mrts"
             )
@@ -481,12 +471,15 @@ def extract_downloaded_tables(directory_name):
             title = entry.replace(".html", "")
 
             index = tables.index(table)
-            if "IOPscience" in title:
-                title += f"_T{str(index + 1)}"
-                table_info = search_iopscience_table_info(soup_content, index + 1)
 
             metadata["retrieval_date"] = str(date.today())
             metadata["paper_access_property"] = "open"
+
+            if "IOPscience" in title:
+                title += f"_T{str(index + 1)}"
+                table_info = search_iopscience_table_info(soup_content, index + 1)
+                footnotes = search_iopscience_footnotes(table, table_info)
+
             if "MNRAS" in title:
                 (
                     publication_date,
@@ -513,11 +506,6 @@ def extract_downloaded_tables(directory_name):
                     or not doi
                 ):
                     metadata = extract_journal_metadata(soup_content)
-
-                if "IOPscience" in title:
-                    footnotes = search_iopscience_footnotes(table, table_info)
-                    table_info["caption"] = search_iopscience_table_caption(table)
-                    table_info["notes"] = search_iopscience_table_notes(table)
 
             json_data = extract_table_data(
                 table,

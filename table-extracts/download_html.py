@@ -80,8 +80,9 @@ def download_html_locally(url, directory_name, suffix, download_extra_files):
     try:
         create_directory(directory_name)
         downloaded_files = os.listdir(directory_name)
-        time.sleep(random.randint(1, 3))
+
         print("Downloading " + url)
+        
         response = requests.get(url, headers=headers)
         content = response.text
         new_title = None

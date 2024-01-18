@@ -14,6 +14,11 @@ mrt_keys = 0
 def find_iopscience_footnotes(string):
     pattern = r"\^ [a-zA-Z]"
     matches = re.findall(pattern, string)
+    if matches:
+        return matches
+
+    pattern = r"\^[a-zA-Z]"
+    matches = re.findall(pattern, string)
     return matches
 
 
@@ -42,10 +47,8 @@ def remove_footnote_from_notes(res, table_info):
             table_info["notes"][index] = ""
 
 
-# Identify footnotes in iopscience journal and if they belong to a header,
-# then remove them because they are only encountered once
-# However, if they belong to rows containing table data they are likely encountered multiple
-# times. Hence, we should keep this information
+# Identify footnotes in iopscience journal and put them in a dictionary
+# Option to remove them from table caption or notes (commented out)
 def identify_iopscience_footnotes(small_tag, footnotes, table_info):
     footnote_value = (
         small_tag.get_text()
@@ -55,19 +58,20 @@ def identify_iopscience_footnotes(small_tag, footnotes, table_info):
         .replace("Note.", "")
         .strip()
     )
+
     result = find_iopscience_footnotes(footnote_value)
     footnote_values = footnote_value.split(".^")
-    for splitted_value in footnote_values:
-        index = footnote_values.index(splitted_value)
-        if splitted_value[0] != "^":
-            footnote_values[index] = f"^{splitted_value}"
-        if splitted_value[-1] != ".":
-            footnote_values[index] = f"{splitted_value}."
+    for split_value in footnote_values:
+        index = footnote_values.index(split_value)
+        if split_value[0] != "^":
+            footnote_values[index] = f"^{split_value}"
+        if split_value[-1] != ".":
+            footnote_values[index] = f"{split_value}."
 
     for res in result:
-        for splitted_value in footnote_values:
-            if res in splitted_value:
-                footnotes.append({res: splitted_value.replace(res, "").strip()})
+        for split_value in footnote_values:
+            if res in split_value:
+                footnotes.append({res: split_value.replace(res, "").strip()})
         # remove_footnote_from_notes(res, table_info)
     return footnotes
 
@@ -83,12 +87,14 @@ def search_iopscience_footnotes(soup_content, table_info):
         sup_tag = small_tag.find("sup")
         if sup_tag == None:
             continue
-        sup_text = sup_tag.get_text().replace(" ", "").replace("\n", "")
+        sup_text = sup_tag.get_text().replace("  ", "").replace("\n", "")
         if sup_text == None:
             continue
-        sup_value = sup_text.replace("^", "")
+        sup_value = sup_text.replace("^", "").replace(" ", "")
+
         if sup_value.isalpha():
             footnotes = identify_iopscience_footnotes(small_tag, footnotes, table_info)
+
     return footnotes
 
 
@@ -97,19 +103,28 @@ def search_iopscience_table_notes(soup_content, table_id):
     notes = ""
     p_tags = soup_content.find_all("p")
     count = 0
+    astronomical_journal = soup_content.find(
+        "meta",
+        {"name": "citation_journal_title", "content": "The Astronomical Journal"},
+    )
     for p_tag in p_tags:
         small_tag = p_tag.find("small")
         if small_tag == None:
             continue
+
         strong_tag = small_tag.find("strong")
         if strong_tag == None:
             continue
-        count += 1
-        if count - 1 != table_id - 1:
-            continue
-        notes = small_tag.get_text().replace("\n", "").replace("  ", "")
 
-        return notes
+        count += 1
+        if astronomical_journal:
+            if count == table_id - 1:
+                notes = small_tag.get_text().replace("\n", "").replace("  ", "")
+                return notes
+        elif count == table_id:
+            notes = small_tag.get_text().replace("\n", "").replace("  ", "")
+            return notes
+
     return notes
 
 
@@ -126,8 +141,6 @@ def search_iopscience_table_caption(soup_content, table_id):
         if str(table_id) not in b_tag.get_text():
             continue
         caption = p_tag.get_text().replace(b_tag.get_text(), "").replace("\xa0", EMPTY)
-
-        return caption
     return caption
 
 
