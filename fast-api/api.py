@@ -14,7 +14,6 @@ from elastic_index import (
     search_index_by_journal,
     search_index_by_title,
     search_index_by_table_caption,
-    search_index_by_word_in_table,
     search_index_by_doi_all,
     search_index_by_doi,
     search_index_by_author_and_year,

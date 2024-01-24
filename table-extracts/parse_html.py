@@ -174,6 +174,19 @@ def extract_table_id(title):
     return table_id
 
 
+# If header is a colspan element (one header but multiple columns)
+# Put header in the middle and add null elements to the rest of the cells
+def reorganise_colspan_element(data, data_found, colspan):
+    header_position = int(colspan[0]) / 2
+    for i in range(0, int(colspan[0])):
+        if data in data_found:
+            continue
+        if i == header_position:
+            data_found.append(data)
+        else:
+            data_found.append(None)
+
+
 # Reorganise headers in a way that empty cells are identified and handled correctly
 def reorganise_headers_as_rows(headers_as_rows, empty_row_cell):
     if len(headers_as_rows) < 1:
@@ -227,6 +240,7 @@ def extract_table_data(
         index = table_rows.index(tr)
         empty_row_cell[index] = []
         ths = tr.find_all("th")
+        pattern = r'colspan="(\d+)"'
         for th in ths:
             col_index = ths.index(th)
             if "</th>" not in str(th):
@@ -236,19 +250,23 @@ def extract_table_data(
             text = th.get_text().replace("\xa0", EMPTY).replace("\n", "").strip()
             header = re.sub(r"\s+", " ", text)
             header = re.sub(r"\s+\.", ".", header)
-            if header == "":
+            if header == "" or header == " ":
                 span = th.find("span")
                 if span:
                     img = span.find("img")
                     if img:
-                        data = "unparsable (img)"
+                        header = "unparsable (img)"
             if header:
                 if header[-1] == ".":
                     header = header[:-1]
 
             if header == " " or header == "":
                 header = None
-            headers.append(header)
+            colspan = re.findall(pattern, str(th))
+            if len(colspan):
+                reorganise_colspan_element(th.getText(), headers, colspan)
+            else:
+                headers.append(header)
         if len(headers) and headers not in headers_as_rows:
             headers_as_rows.append(headers)
     headers_as_rows = reorganise_headers_as_rows(headers_as_rows, empty_row_cell)
@@ -266,6 +284,12 @@ def extract_table_data(
     else:
         table_id = extract_table_id(title)
         metadata["table_id"] = table_id
+
+    # since title has been updated, check if entry exists already
+    # if yes, return none so as not to extract and continue the process
+    path_to_json = os.path.join("json_results", f"{title}.json")
+    if os.path.exists(path_to_json):
+        return None
 
     table_info_to_json_data(metadata, current_table_info, json_data)
 
@@ -291,8 +315,6 @@ def extract_table_data(
 
     extra_metadata["table_rows"] = 0
     extra_metadata["table_cols"] = 0
-    if len(headers_as_rows):
-        extra_metadata["table_cols"] = len(list(headers_as_rows[0]))
 
     if "A&A" in title:
         journal = "A&A"
@@ -314,7 +336,6 @@ def extract_table_data(
                 valid_footnotes = validate_aanda_footnotes(
                     footnotes, valid_footnotes, headers
                 )
-
             convert_to_json_array(
                 headers_as_row, json_data, key_prefix, valid_footnotes, journal, True
             )
@@ -341,7 +362,7 @@ def extract_table_data(
             if index in cell_to_add and str(col_index) in cell_to_add[index]:
                 data = cell_to_add[index][1]
 
-            if data == "":
+            if data == "" or data == " ":
                 span = td.find("span")
                 if span:
                     img = span.find("img")
@@ -358,9 +379,7 @@ def extract_table_data(
 
         if row_index == 1:
             extra_metadata["table_rows"] = len(table_rows)
-            if not len(headers_as_rows):
-                extra_metadata["table_cols"] = len(data_found)
-
+            extra_metadata["table_cols"] = len(data_found)
             include_extra_metadata_json_data(extra_metadata, metadata, json_data)
 
         if "A&A" in title:
@@ -372,15 +391,10 @@ def extract_table_data(
             data_found, json_data, key_prefix, valid_footnotes, journal, False
         )
 
-    keys = list(json_data["metadata"].keys())
-    keys.sort()
-    json_data["metadata"] = {i: json_data["metadata"][i] for i in keys}
-
-    path_to_json = os.path.join("json_results", f"{title}.json")
-    if os.path.exists(path_to_json):
-        return None
+    # keys = list(json_data["metadata"].keys())
+    # keys.sort()
+    # json_data["metadata"] = {i: json_data["metadata"][i] for i in keys}
     write_to_json_file("json_results", f"{title}", json_data)
-
     return json_data
 
 
@@ -391,8 +405,6 @@ def write_to_json_file(directory_name, title, json_data):
     if not os.path.isdir(directory_name):
         os.mkdir(directory_name)
     path_to_json = os.path.join(directory_name, f"{title}.json")
-    if os.path.exists(path_to_json):
-        return
     file = open(path_to_json, "w", encoding="utf-8")
     file.write(json.dumps(json_data, indent=1))
 
@@ -443,6 +455,7 @@ def extract_downloaded_tables(directory_name):
         if "Captcha" in entry:
             continue
 
+        # extract metadata + table info only
         if "A&A" in entry:
             metadata = search_aanda_journal_metadata(entry)
             d = dt.datetime.strptime(metadata["date"], "%Y-%m-%d")
@@ -451,7 +464,7 @@ def extract_downloaded_tables(directory_name):
             table_info = search_aanda_table_info(soup_content)
 
         mrt_indexes = {}
-
+        # extract metadata + mrt tables only
         if "IOPscience" in entry:
             metadata = extract_journal_metadata(soup_content)
             mrt_titles, json_results = extract_iopscience_mrt_tables(
